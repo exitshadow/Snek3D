@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd1f3e27dbf8b0c45be499c3143d2177, type: 3}
+  m_Name: SnakeSlice
+  m_EditorClassIdentifier: 
+  isSmooth: 1
+  isSymmetrical: 1
+  baseVertices:
+  - point: {x: 0, y: 1}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 0.6, y: 0.8}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 0.72, y: 0.47}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 1, y: 0.18}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 1, y: -0.37}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 0.63, y: -0.77}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 0, y: -1}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 0, y: -1}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: -0.63, y: -0.77}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: -1, y: -0.37}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: -1, y: 0.18}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: -0.72, y: 0.47}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: -0.6, y: 0.8}
+    normal: {x: 0, y: 0}
+    c: 0
+  - point: {x: 0, y: 1}
+    normal: {x: 0, y: 0}
+    c: 0
+  edgeLinksNodes: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d000000
