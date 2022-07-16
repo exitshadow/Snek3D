@@ -15,6 +15,7 @@ public class BodyOperator : MonoBehaviour
 }
 
 // TODO
+// ! everything is going in Snake.cs
 // adapt code from RoadSegment.cs to the body
 //
 //  [in SnakeOperator / HeadOperator]

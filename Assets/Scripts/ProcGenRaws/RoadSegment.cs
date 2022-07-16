@@ -169,8 +169,6 @@ public class RoadSegment : MonoBehaviour
             DrawVert(testPoint, extrusionShape.baseVertices[i].point, scale);
         }
 
-        // this seems utterly useless for a symmetrical shape
-        // with no cross-axis intersections in its edges
         Vector3[] verts = extrusionShape.baseVertices.Select(v => testPoint.GetDisplacedPoint(v.point * scale)).ToArray();
 
         for (int i = 0; i < extrusionShape.edgeLinksNodes.Length - 1; i++)

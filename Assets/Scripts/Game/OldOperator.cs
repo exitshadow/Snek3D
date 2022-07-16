@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SnakeOperator : MonoBehaviour
+public class OldOperator : MonoBehaviour
 {
     public float movingSpeed = 10;
     public float steeringSpeed = 200;
@@ -42,7 +42,7 @@ public class SnakeOperator : MonoBehaviour
         if(positionsHistory.Count > 1024) {
             positionsHistory.RemoveAt(positionsHistory.Count-1);
         }
-        Debug.Log(positionsHistory.Count);
+        //Debug.Log(positionsHistory.Count);
 
         // make body parts follow using positions history
         int index = 0;
