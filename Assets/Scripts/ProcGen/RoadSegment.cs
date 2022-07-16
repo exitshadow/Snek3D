@@ -20,10 +20,21 @@ public class RoadSegment : MonoBehaviour
     // internal attributes
     private Mesh procSeg;
     private int vc;
+    private int step;
+    private int stop;
 
     private void Awake()
     {
         vc = extrusionShape.VertCount;
+
+        if (extrusionShape.isSmooth) {
+            step = 1;
+            stop = 1;
+        } 
+        else {
+            step = 2;
+            stop = 0;
+        }
 
         procSeg = new Mesh();
         procSeg.name = "Procedural Segment";
@@ -32,18 +43,20 @@ public class RoadSegment : MonoBehaviour
 
     private void Start()
     {
-        GenerateMesh();
+        //GenerateMesh();
     }
 
     private void Update()
     {
-        //OldGenerateMesh();
+        GenerateMesh();
     }
 
 
-
     private void GenerateMesh() {
+        procSeg.Clear();
+
         List<Vector3> inVertices = new List<Vector3>();
+        List<Vector3> inNormals = new List<Vector3>();
         List<int> triangles = new List<int>();
 
         // populate vertices
@@ -54,8 +67,15 @@ public class RoadSegment : MonoBehaviour
 
             for (int i = 0; i < extrusionShape.VertCount; i++)
             {
-                inVertices.Add(localOrigin.GetDisplacedPoint(extrusionShape.baseVertices[i].point));
-                //Debug.Log($"vertex[{i}] : {inVertices[i]}");
+                inVertices.Add(localOrigin.GetDisplacedPoint(extrusionShape.baseVertices[i].point*scale));
+                
+                if (extrusionShape.isSmooth) {
+                    // if the shape is smooth the orientation of the normal is the same as the point
+                    inNormals.Add(localOrigin.GetOrientationPoint(extrusionShape.baseVertices[i].point));
+                } else {
+                    // otherwise rely on data input
+                    inNormals.Add(localOrigin.GetOrientationPoint(extrusionShape.baseVertices[i].normal));
+                }
             }
         }
 
@@ -71,7 +91,9 @@ public class RoadSegment : MonoBehaviour
             //Debug.Log(rootNext);
 
             // loop in mesh vertices
-            for (int v = 0; v < vc-1; v++)
+            // this will not work correctly with split vertices for hard edges
+            // TODO v += 2 for hard edges
+            for (int v = 0; v < vc - stop ; v+= step)
             {
                 int node_a = extrusionShape.edgeLinksNodes[v];
                 int node_b = extrusionShape.edgeLinksNodes[v+1];
@@ -94,64 +116,7 @@ public class RoadSegment : MonoBehaviour
         }
 
         procSeg.SetVertices(inVertices);
-        procSeg.SetTriangles(triangles, 0);
-    }
-
-
-
-    private void OldGenerateMesh()
-    {
-
-        // populate vertices
-        List<Vector3> inVertices = new List<Vector3>();
-        for (int slice = 0; slice < subDivs; slice++)
-        {
-            float t = slice / (float)(subDivs - 1);
-            OrientedPoint localPoint = GetBezierPoint(t);
-
-            for (int i = 0; i < extrusionShape.baseVertices.Length; i++)
-            {
-                inVertices.Add(
-                    localPoint.GetDisplacedPoint(
-                        extrusionShape.baseVertices[i].point));
-            }
-        }
-
-        // populate triangles
-        List<int> triangles = new List<int>();
-        for (int slice = 0; slice < subDivs -1; slice++)
-        {
-            int rootIndex = slice * extrusionShape.VertCount;
-            int rootIndexNext = (slice + 1) * extrusionShape.VertCount;
-
-            // this iterates face by face through sets of 2 edges
-            for (int edgeNode = 0; edgeNode < extrusionShape.EdgeCount -1; edgeNode ++)
-            {
-                // define A and B based on the edge node (for clarity of reading only)
-                int edgeIndexA = extrusionShape.edgeLinksNodes[edgeNode];
-                int edgeIndexB = extrusionShape.edgeLinksNodes[edgeNode + 1];
-
-                // bind arbitrarial local points A, B, A', B'
-                // with each root and framing edges of the current quad face
-                int currentA = rootIndex + edgeIndexA; 
-                int currentB = rootIndex + edgeIndexB; 
-                int nextA = rootIndexNext + edgeIndexA;
-                int nextB = rootIndexNext + edgeIndexB;
-
-                // clockwise addition of first triangle face
-                triangles.Add(currentA);
-                triangles.Add(nextA);
-                triangles.Add(nextB);
-
-                // clockwise addition of the second triangle face
-                triangles.Add(currentA);
-                triangles.Add(nextB);
-                triangles.Add(currentB);
-            }
-        }
-
-
-        procSeg.SetVertices(inVertices);
+        procSeg.SetNormals(inNormals);
         procSeg.SetTriangles(triangles, 0);
     }
 
@@ -201,9 +166,6 @@ public class RoadSegment : MonoBehaviour
             Vector3 b = verts[extrusionShape.edgeLinksNodes[i + 1]];
             Gizmos.DrawLine(a, b);
         }
-
-
-
     }
 
     OrientedPoint GetBezierPoint(float t)
