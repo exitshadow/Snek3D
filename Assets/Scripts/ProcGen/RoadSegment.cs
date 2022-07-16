@@ -36,6 +36,15 @@ public class RoadSegment : MonoBehaviour
             stop = 0;
         }
 
+        // TODO set symmetries for X or Y axis
+        if (extrusionShape.isSymmetrical) {
+            for (int i = 0; i < vc; i++)
+            {
+                // assign mapping coordinate to the y axis and bringing it to uv space
+                extrusionShape.baseVertices[i].c = (extrusionShape.baseVertices[i].point.y + 1) / 2;
+            }
+        } // else rely on mesh data
+
         procSeg = new Mesh();
         procSeg.name = "Procedural Segment";
         GetComponent<MeshFilter>().sharedMesh = procSeg;
@@ -57,6 +66,7 @@ public class RoadSegment : MonoBehaviour
 
         List<Vector3> inVertices = new List<Vector3>();
         List<Vector3> inNormals = new List<Vector3>();
+        List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
 
         // populate vertices
@@ -76,6 +86,8 @@ public class RoadSegment : MonoBehaviour
                     // otherwise rely on data input
                     inNormals.Add(localOrigin.GetOrientationPoint(extrusionShape.baseVertices[i].normal));
                 }
+
+                uvs.Add(new Vector2(t*8, extrusionShape.baseVertices[i].c));
             }
         }
 
@@ -117,6 +129,7 @@ public class RoadSegment : MonoBehaviour
 
         procSeg.SetVertices(inVertices);
         procSeg.SetNormals(inNormals);
+        procSeg.SetUVs(0, uvs);
         procSeg.SetTriangles(triangles, 0);
     }
 
