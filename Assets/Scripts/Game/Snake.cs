@@ -15,9 +15,8 @@ public class Snake : MonoBehaviour
     // for now, let's keep it with a single curve
     // for later a more complex implementation
     // https://catlikecoding.com/unity/tutorials/curves-and-splines/
-    public Transform[] controlPoints = new Transform[3];
-    // the reason there are only 3 control points is because the first one
-    // always is the origin of the head (the object this script is attached to)
+    public Transform[] controlPoints = new Transform[4];
+    // it can refer to itself for the first handle point
 
     [Header("Body MeshGen Settings")]
     [SerializeField] MeshSlice shape;
@@ -38,7 +37,7 @@ public class Snake : MonoBehaviour
     // keeps track of roughly 20 seconds of positions
     // note that this initializes all points at (0,0,0) [if constructor is Vector3]
     // so if no position is specified it will just unroll from the center
-    private float[] thicknessMapping;
+    private float[] thicknessMapping = new float[1024];
     private Mesh mesh;
     private int vc;
     private int step;
@@ -70,14 +69,14 @@ public class Snake : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        thicknessMapping = new float[1024];
-        DrawThicknessBezier();
+        //thicknessMapping = new float[1024];
+        DrawBezierCurve(thicknessModulator);
 
         if(preview) {
             PopulateInitialPositions();
             DrawBodyPreview();
         } else {
-            DrawBodyBezier();
+            DrawBezierCurve(controlPoints);
         }
     }
 
@@ -97,6 +96,18 @@ public class Snake : MonoBehaviour
                 Gizmos.DrawLine(a,b);
             }
         }
+
+        // start point
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(controlPoints[0].position, .05f);
+        // control points
+        Gizmos.color = Color.blue;
+        Gizmos.DrawSphere(controlPoints[1].position, .03f);
+        Gizmos.DrawSphere(controlPoints[2].position, .03f);
+        // end point
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(controlPoints[3].position, .03f);
+        Gizmos.color = Color.white;
     }
 
     void PopulateInitialPositions() {
@@ -104,7 +115,7 @@ public class Snake : MonoBehaviour
         for (int i = 0; i < positionsHistory.Length; i++)
         {
             float t = i / (positionsHistory.Length -1f);
-            OrientedPoint localOrigin = GetBezierPoint(t);
+            OrientedPoint localOrigin = CalculateBezierPoint(t, controlPoints);
             positionsHistory[i] = localOrigin;
 
         }
@@ -112,20 +123,19 @@ public class Snake : MonoBehaviour
         for (int i = 0; i < thicknessMapping.Length; i++)
         {
             float t = i / (positionsHistory.Length -1f);
-            float m = GetBezierThick(t).position.x;
+            float m = CalculateBezierPoint(t, thicknessModulator).position.x;
             thicknessMapping[i] = m;
             
         }
     }
 
-    OrientedPoint GetBezierPoint(float t)
-    {
-
+    OrientedPoint CalculateBezierPoint(float t, Transform[] controls) {
+        
         // setting points and handles
-        Vector3 p0 = transform.position;
-        Vector3 p1 = GetPos(0);
-        Vector3 p2 = GetPos(1);
-        Vector3 p3 = GetPos(2);
+        Vector3 p0 = controls[0].position;
+        Vector3 p1 = controls[1].position;
+        Vector3 p2 = controls[2].position;
+        Vector3 p3 = controls[3].position;
 
         // first layer of interpolation
         Vector3 a = Vector3.Lerp(p0, p1, t);
@@ -149,72 +159,25 @@ public class Snake : MonoBehaviour
         return new OrientedPoint(pos, rot);
     }
 
-    void DrawBodyBezier() {
+    void DrawBezierCurve(Transform[] controls) {
+        // start point
         Gizmos.color = Color.red;
-        Gizmos.DrawSphere(transform.position, .05f);
+        Gizmos.DrawSphere(controls[0].position, .05f);
+        // control points
         Gizmos.color = Color.blue;
-        Gizmos.DrawSphere(GetPos(0), .03f);
-        Gizmos.DrawSphere(GetPos(1), .03f);
+        Gizmos.DrawSphere(controls[1].position, .03f);
+        Gizmos.DrawSphere(controls[2].position, .03f);
+        // end point
         Gizmos.color = Color.red;
-        Gizmos.DrawSphere(GetPos(2), .03f);
+        Gizmos.DrawSphere(controls[3].position, .03f);
+        Gizmos.color = Color.white;
         
         Handles.DrawBezier(
-            transform.position,
-            GetPos(2),
-            GetPos(0),
-            GetPos(1),
+            controls[0].position,
+            controls[3].position,
+            controls[1].position,
+            controls[2].position,
             Color.white,
-            EditorGUIUtility.whiteTexture,
-            1f);
-    }
-
-    // todo refactor here
-        OrientedPoint GetBezierThick(float t)
-    {
-
-        // setting points and handles
-        Vector3 p0 = thicknessModulator[0].position;
-        Vector3 p1 = thicknessModulator[1].position;
-        Vector3 p2 = thicknessModulator[2].position;
-        Vector3 p3 = thicknessModulator[3].position;
-
-        // first layer of interpolation
-        Vector3 a = Vector3.Lerp(p0, p1, t);
-        Vector3 b = Vector3.Lerp(p1, p2, t);
-        Vector3 c = Vector3.Lerp(p2, p3, t);
-
-        // second layer of interpolation
-        Vector3 d = Vector3.Lerp(a, b, t);
-        Vector3 e = Vector3.Lerp(b, c, t);
-
-        // last layer of interpolation
-        Vector3 pos = Vector3.Lerp(d, e, t);
-
-        // catching tangent line to store its normalized direction
-        Vector3 dir = (e - d).normalized;
-
-        // and pointing the rotation in the same forwards as dir
-        Quaternion rot = Quaternion.LookRotation(dir);
-        // note: this isn't very exact but it does the job
-
-        return new OrientedPoint(pos, rot);
-    }
-
-    void DrawThicknessBezier(){
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(thicknessModulator[0].position, .05f);
-        Gizmos.color = Color.blue;
-        Gizmos.DrawSphere(thicknessModulator[1].position, .03f);
-        Gizmos.DrawSphere(thicknessModulator[2].position, .03f);
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(thicknessModulator[3].position, .03f);
-        
-        Handles.DrawBezier(
-            thicknessModulator[0].position,
-            thicknessModulator[3].position,
-            thicknessModulator[1].position,
-            thicknessModulator[2].position,
-            Color.green,
             EditorGUIUtility.whiteTexture,
             1f);
     }
