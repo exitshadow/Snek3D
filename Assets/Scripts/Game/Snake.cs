@@ -26,6 +26,7 @@ public class Snake : MonoBehaviour
     [Range(.05f, 1f)] public float thickness = .5f;
     // todo
     // modulate thickness with a bezier curve and map it to an array for matching values
+    public Transform[] thicknessModulator = new Transform[4];
     public int segments = 5;
     public float segmentLength = 2f;
     [Range(2,16)] public int subDivs = 8;
@@ -69,6 +70,9 @@ public class Snake : MonoBehaviour
 
     void OnDrawGizmos()
     {
+        thicknessMapping = new float[1024];
+        DrawThicknessBezier();
+
         if(preview) {
             PopulateInitialPositions();
             DrawBodyPreview();
@@ -78,28 +82,39 @@ public class Snake : MonoBehaviour
     }
 
     void DrawBodyPreview() {
+        Gizmos.color = Color.white;
         int edgeRing = positionsHistory.Length / subDivs / 8;
-        thicknessMapping = new float[edgeRing];
         for (int i = 0; i < positionsHistory.Length; i+= edgeRing)
         {
             Gizmos.DrawSphere(positionsHistory[i].position, .02f);
             OrientedPoint origin = positionsHistory[i];
+            float m = thicknessMapping[i];
 
             for (int v = 0; v < shape.baseVertices.Length - 1; v++)
             {
-                Vector3 a = origin.GetDisplacedPoint(shape.baseVertices[v].point*thickness);
-                Vector3 b = origin.GetDisplacedPoint(shape.baseVertices[v+1].point*thickness);
+                Vector3 a = origin.GetDisplacedPoint(shape.baseVertices[v].point*thickness*m);
+                Vector3 b = origin.GetDisplacedPoint(shape.baseVertices[v+1].point*thickness*m);
                 Gizmos.DrawLine(a,b);
             }
         }
     }
 
     void PopulateInitialPositions() {
+        //Debug.Log(thicknessMapping.Length);
         for (int i = 0; i < positionsHistory.Length; i++)
         {
             float t = i / (positionsHistory.Length -1f);
             OrientedPoint localOrigin = GetBezierPoint(t);
             positionsHistory[i] = localOrigin;
+
+        }
+
+        for (int i = 0; i < thicknessMapping.Length; i++)
+        {
+            float t = i / (positionsHistory.Length -1f);
+            float m = GetBezierThick(t).position.x;
+            thicknessMapping[i] = m;
+            
         }
     }
 
@@ -149,6 +164,57 @@ public class Snake : MonoBehaviour
             GetPos(0),
             GetPos(1),
             Color.white,
+            EditorGUIUtility.whiteTexture,
+            1f);
+    }
+
+    // todo refactor here
+        OrientedPoint GetBezierThick(float t)
+    {
+
+        // setting points and handles
+        Vector3 p0 = thicknessModulator[0].position;
+        Vector3 p1 = thicknessModulator[1].position;
+        Vector3 p2 = thicknessModulator[2].position;
+        Vector3 p3 = thicknessModulator[3].position;
+
+        // first layer of interpolation
+        Vector3 a = Vector3.Lerp(p0, p1, t);
+        Vector3 b = Vector3.Lerp(p1, p2, t);
+        Vector3 c = Vector3.Lerp(p2, p3, t);
+
+        // second layer of interpolation
+        Vector3 d = Vector3.Lerp(a, b, t);
+        Vector3 e = Vector3.Lerp(b, c, t);
+
+        // last layer of interpolation
+        Vector3 pos = Vector3.Lerp(d, e, t);
+
+        // catching tangent line to store its normalized direction
+        Vector3 dir = (e - d).normalized;
+
+        // and pointing the rotation in the same forwards as dir
+        Quaternion rot = Quaternion.LookRotation(dir);
+        // note: this isn't very exact but it does the job
+
+        return new OrientedPoint(pos, rot);
+    }
+
+    void DrawThicknessBezier(){
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(thicknessModulator[0].position, .05f);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawSphere(thicknessModulator[1].position, .03f);
+        Gizmos.DrawSphere(thicknessModulator[2].position, .03f);
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(thicknessModulator[3].position, .03f);
+        
+        Handles.DrawBezier(
+            thicknessModulator[0].position,
+            thicknessModulator[3].position,
+            thicknessModulator[1].position,
+            thicknessModulator[2].position,
+            Color.green,
             EditorGUIUtility.whiteTexture,
             1f);
     }
