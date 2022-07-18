@@ -23,8 +23,6 @@ public class Snake : MonoBehaviour
     public bool preview = true;
     [Range(0f, 1f)] public float tPreview = 0;
     [Range(.05f, 1f)] public float thickness = .5f;
-    // todo
-    // modulate thickness with a bezier curve and map it to an array for matching values
     public Transform[] thicknessModulator = new Transform[4];
     public int segments = 5;
     public float segmentLength = 2f;
@@ -69,8 +67,6 @@ public class Snake : MonoBehaviour
         mesh.name = "Procedural Body";
         GetComponent<MeshFilter>().sharedMesh = mesh;
 
-        PopulateInitialPositions(false);
-
     }
 
     void OnDrawGizmos()
@@ -80,7 +76,7 @@ public class Snake : MonoBehaviour
 
         if (preview)
         {
-            PopulateInitialPositions(true);
+            PopulateInitialPositions();
             DrawBodyPreview();
         }
         else
@@ -89,8 +85,9 @@ public class Snake : MonoBehaviour
         }
     }
 
-    void Start()
+    void Update()
     {
+        PopulateInitialPositions(false);
         GenerateBodyMesh();
     }
 
@@ -125,9 +122,9 @@ public class Snake : MonoBehaviour
         Gizmos.color = Color.white;
     }
 
-    void PopulateInitialPositions(bool global)
+    void PopulateInitialPositions(bool global=true)
     {
-        Debug.Log("Populating initial positions");
+        //Debug.Log("Populating initial positions");
         for (int i = 0; i < positionsHistory.Length; i++)
         {
             OrientedPoint localOrigin;
@@ -137,7 +134,7 @@ public class Snake : MonoBehaviour
             else localOrigin = CalculateBezierPoint(t, controlPoints, false);
 
             positionsHistory[i] = localOrigin;
-            Debug.Log($"position at index {i} : {positionsHistory[i].position}");
+            //Debug.Log($"position at index {i} : {positionsHistory[i].position}");
 
         }
 
@@ -153,7 +150,7 @@ public class Snake : MonoBehaviour
 
     void GenerateBodyMesh()
     {
-        Debug.Log("Generating body mesh");
+        //Debug.Log("Generating body mesh");
 
         mesh.Clear();
         //Debug.Log("Mesh Cleared");
@@ -170,7 +167,7 @@ public class Snake : MonoBehaviour
         for (int slice = 0; slice < positionsHistory.Length; slice+= edgeRing)
         {
             OrientedPoint localOrigin = positionsHistory[slice];
-            Debug.Log($"position at slice {slice}: {localOrigin.position}");
+            //Debug.Log($"position at slice {slice}: {localOrigin.position}");
 
             float m = thicknessMapping[slice];
             //Debug.Log($"thickness modulator = {m}");
