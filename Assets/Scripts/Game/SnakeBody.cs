@@ -31,7 +31,7 @@ public class SnakeBody : MonoBehaviour
     [SerializeField] MeshSlice shape;
     [SerializeField] bool preview = true;
     [SerializeField] bool debug = true;
-    [SerializeField] [Range(.5f, 1f)] float bodyThickness = .5f;
+    [SerializeField] [Range(.01f, 1f)] float bodyThickness = .5f;
     [SerializeField] Transform[] thicknessModulator = new Transform[4];
     [SerializeField] int initialSegmentsCount = 10;
     [SerializeField] int maxSegmentsCount = 50;
@@ -119,6 +119,7 @@ public class SnakeBody : MonoBehaviour
     {
         // this is equivalent to the old PopulateInitialPositions()
         segmentPoints[0].position = head.position;
+        segmentPoints[0].rotation = Quaternion.LookRotation(head.position);
 
         if(debug) linePreview.SetPosition(0, segmentPoints[0].position); //*testing only
 
@@ -127,6 +128,7 @@ public class SnakeBody : MonoBehaviour
             Vector3 target = segmentPoints[i-1].position;
             Vector3 current = segmentPoints[i].position;
             Vector3 bufferDist = -head.forward * segmentsInterval;
+            Vector3 dir = target - current;
 
             segmentPoints[i].position = Vector3.SmoothDamp(
                 current,
@@ -134,10 +136,13 @@ public class SnakeBody : MonoBehaviour
                 ref segmentPoints[i].velocity,
                 movementDamping + i / trailResponse);
             
+            segmentPoints[i].rotation = Quaternion.LookRotation(dir);
+
             if(debug) linePreview.SetPosition(i, segmentPoints[i].position);
 
-            GenerateBodyMesh();
-        } 
+        }
+
+        GenerateBodyMesh();
     }
 
 
