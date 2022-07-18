@@ -12,6 +12,7 @@ public class Tail : MonoBehaviour
     public Transform head;
     public float segmentsInterval = .7f;
     public float damping = .08f;
+    public float trail = 200;
 
     private Vector3[] segmentsVelocities;
 
@@ -38,7 +39,7 @@ public class Tail : MonoBehaviour
                 current,
                 target + bufferDist,
                 ref segmentsVelocities[i],
-                damping);
+                damping + i / trail);
         }
 
         lineRenderer.SetPositions(segmentsPositions);
