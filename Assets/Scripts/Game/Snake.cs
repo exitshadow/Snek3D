@@ -269,7 +269,7 @@ public class Snake : MonoBehaviour
         Quaternion rot = Quaternion.LookRotation(dir);
         // note: this isn't very exact but it does the job
 
-        return new OrientedPoint(pos, rot);
+        return new OrientedPoint(pos, rot, new Vector3(0,0,0));
     }
 
     void DrawBezierCurve(Transform[] controls)

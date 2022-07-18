@@ -6,17 +6,20 @@ public struct OrientedPoint
 {
     public Vector3 position;
     public Quaternion rotation;
+    public Vector3 velocity;
 
     // constructor with full Quaternion
-    public OrientedPoint(Vector3 position, Quaternion rotation) {
+    public OrientedPoint(Vector3 position, Quaternion rotation, Vector3 velocity) {
         this.position = position;
         this.rotation = rotation;
+        this.velocity = velocity;
     }
 
     // forward looking Quaternion constructor overload
-    public OrientedPoint(Vector3 position, Vector3 forward) {
+    public OrientedPoint(Vector3 position, Vector3 forward, Vector3 velocity) {
         this.position = position;
         this.rotation = Quaternion.LookRotation(forward);
+        this.velocity = velocity;
     }
 
     // returns a point from our local point but displaced by a vector
