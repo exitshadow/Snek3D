@@ -15,7 +15,6 @@ using UnityEngine;
 //      manage the player's controls on the snake and leave the body logic
 //      to this script.
 
-[RequireComponent(typeof(MeshSlice))]
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 public class SnakeBody : MonoBehaviour
@@ -27,9 +26,10 @@ public class SnakeBody : MonoBehaviour
     [SerializeField] Transform[] thicknessModulator = new Transform[4];
     [SerializeField] int initialSegmentsCount = 20;
     [SerializeField] float segmentsInterval = .5f;
-    [SerializeField] [Range(1, 3)] int subDivs = 1;
+    [SerializeField] [Range(1, 3)] int subDivs = 1; // * might not be needed anymore
 
-    [Header("Initial Pose")]
+
+    [Header("Initial Pose")] // * might not be needed anymore
     [SerializeField] Transform[] initialPoseControlPoints = new Transform[4];
 
     [Header("Movement")]
@@ -40,6 +40,7 @@ public class SnakeBody : MonoBehaviour
     // * testing purposes only
     [SerializeField] LineRenderer linePreview;
 
+    // todo might need a List<OrientedPoint> instead
     private OrientedPoint[] segmentPoints;
     // NOTE OrientedPoint struct contains
     //      position, rotation and velocity
@@ -47,12 +48,16 @@ public class SnakeBody : MonoBehaviour
 
     void Start()
     {
+        // * testing purposing only
+        linePreview.positionCount = initialSegmentsCount;
+
         segmentPoints = new OrientedPoint[initialSegmentsCount];
     }
 
     void Update()
     {
         segmentPoints[0].position = head.position;
+        linePreview.SetPosition(0, segmentPoints[0].position); //*testing only
         for (int i = 1; i < segmentPoints.Length; i++)
         {
             Vector3 target = segmentPoints[i-1].position;
@@ -65,6 +70,7 @@ public class SnakeBody : MonoBehaviour
                 ref segmentPoints[i].velocity,
                 movementDamping + i / trailResponse);
             
+            // * testing only
             linePreview.SetPosition(i, segmentPoints[i].position);
         } 
     }
