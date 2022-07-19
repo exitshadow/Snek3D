@@ -8,20 +8,11 @@ using UnityEditor;
     /// </summary>
 
 // todo
-// [x] use Tail.cs positions management functions to translate it
-//      to the points that will generate or update a new mesh
-//  * use the positions to generate bones and skin them to the slice's
-//      vertices (by adapting the existing GenerateMesh() function)
-//  * split controls from Snake.cs to SnakeController.cs
-//      that will only manage the player's controls on the snake and
-//      leave the body logic to this script.
+// => solve the vague wonkiness (performance?)
+// => generate mesh and bones every time GrowSnake() is called instead of
+//      generating the mesh 50 times per frame
+//      [https://docs.unity3d.com/ScriptReference/Mesh.SetBoneWeights.html]
 
-// TODO = Dynamically growing the snake
-//  might need a List<OrientedPoint> and List<float>...
-//  in fact it's more complicated than that because they cannot be modified
-//  by reference, might need to find a trick with a wider array and swap values
-//  on the go depending on the size (ie a variable like currentLength)
-//  ... seems feasible it just gives the snake a maximum length
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -36,8 +27,6 @@ public class SnakeBody : MonoBehaviour
     [SerializeField] int initialSegmentsCount = 10;
     [SerializeField] int maxSegmentsCount = 50;
     [SerializeField] float segmentsInterval = .5f;
-    [SerializeField] [Range(1, 3)] int subDivs = 1; // * might not be needed anymore
-
 
     [Header("Initial Pose")] // * might not be needed anymore
     [SerializeField] Transform[] initialPoseControlPoints = new Transform[4];
@@ -47,7 +36,6 @@ public class SnakeBody : MonoBehaviour
     [SerializeField] float movementDamping = .08f;
     [SerializeField] float trailResponse = 200f;
 
-    // * testing purposes only
     [SerializeField] LineRenderer linePreview;
 
 
@@ -109,9 +97,12 @@ public class SnakeBody : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        BezierUtils.DrawBezierCurve(thicknessModulator);
-        BezierUtils.DrawBezierCurve(initialPoseControlPoints);
-        if (preview) DrawBodyPreview();
+        if(preview)
+        {
+            BezierUtils.DrawBezierCurve(thicknessModulator);
+            BezierUtils.DrawBezierCurve(initialPoseControlPoints);
+            DrawBodyPreview();
+        }
         
     }
 
@@ -119,7 +110,7 @@ public class SnakeBody : MonoBehaviour
     {
         // this is equivalent to the old PopulateInitialPositions()
         segmentPoints[0].position = head.position;
-        segmentPoints[0].rotation = Quaternion.LookRotation(head.position);
+        segmentPoints[0].rotation = head.rotation;
 
         if(debug) linePreview.SetPosition(0, segmentPoints[0].position); //*testing only
 
@@ -200,7 +191,7 @@ public class SnakeBody : MonoBehaviour
                 //Debug.Log("added normals");
 
                 // todo probably some tweaking for this one
-                uvs.Add(new Vector2(slice / 8, shape.baseVertices[i].c));
+                uvs.Add(new Vector2(t * currentSegmentsCount / 2, shape.baseVertices[i].c));
                 
             }
         }
