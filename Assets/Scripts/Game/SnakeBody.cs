@@ -7,29 +7,43 @@ using UnityEditor;
     /// Controls the mesh generation and the positions of Snake's tail
     /// </summary>
 
-// todo
-// => solve the vague wonkiness (performance?)
+// todo general
+// => solve the vague wonkiness (performance?) -> seems like it is
 // => generate mesh and bones every time GrowSnake() is called instead of
 //      generating the mesh 50 times per frame
 //      [https://docs.unity3d.com/ScriptReference/Mesh.SetBoneWeights.html]
+// => add rigidbodies for each bone and physics?
+
+// maybe
+//  reform the OrientedPoint struct to contain bones and weigths
+
+// todo tasks
+//  in GenerateMesh()
+//      - create bones at localOrigins and set the weights
+//      - bind Mesh to the SkinnedMeshRenderer component
 
 
 [RequireComponent(typeof(MeshFilter))]
-[RequireComponent(typeof(MeshRenderer))]
+[RequireComponent(typeof(SkinnedMeshRenderer))]
 public class SnakeBody : MonoBehaviour
 {
     [Header("Mesh Generation")]
     [SerializeField] MeshSlice shape;
     [SerializeField] bool preview = true;
     [SerializeField] bool debug = true;
+    [SerializeField] bool ShowBezier = true;
     [SerializeField] [Range(.01f, 1f)] float bodyThickness = .5f;
     [SerializeField] Transform[] thicknessModulator = new Transform[4];
     [SerializeField] int initialSegmentsCount = 10;
     [SerializeField] int maxSegmentsCount = 50;
     [SerializeField] float segmentsInterval = .5f;
 
+    [Space]
+
     [Header("Initial Pose")] // * might not be needed anymore
     [SerializeField] Transform[] initialPoseControlPoints = new Transform[4];
+
+    [Space]
 
     [Header("Movement")]
     [SerializeField] Transform head;
@@ -38,10 +52,13 @@ public class SnakeBody : MonoBehaviour
 
     [SerializeField] LineRenderer linePreview;
 
-
+//  Mesh generation internal data
     private OrientedPoint[] segmentPoints;
     // NOTE OrientedPoint struct contains
     //      position, rotation and velocity
+
+    private BoneWeight[] arr_weights; // list is created in GenerateBodyMesh()
+    private Transform[] bones;
     private float[] thicknessMapping; // could add that to OrientedPoint :thinking:
     private Mesh mesh;
     private int vc;
@@ -53,6 +70,14 @@ public class SnakeBody : MonoBehaviour
     {
         vc = shape.VertCount;
         currentSegmentsCount = initialSegmentsCount;
+
+        segmentPoints = new OrientedPoint[maxSegmentsCount];
+        thicknessMapping = new float[maxSegmentsCount];
+        bones = new Transform[maxSegmentsCount];
+        for (int i = 0; i < bones.Length; i++)
+        {
+            bones[i] = new GameObject("Spine").transform;
+        }
 
         if (shape.isSmooth)
         {
@@ -75,12 +100,10 @@ public class SnakeBody : MonoBehaviour
 
         mesh = new Mesh();
         mesh.name = "Snake Body";
-        GetComponent<MeshFilter>().sharedMesh = mesh;
+        GetComponent<SkinnedMeshRenderer>().sharedMesh = mesh;
+        GetComponent<SkinnedMeshRenderer>().bones = bones;
 
         if(debug) linePreview.positionCount = initialSegmentsCount;
-
-        segmentPoints = new OrientedPoint[maxSegmentsCount];
-        thicknessMapping = new float[maxSegmentsCount];
 
         PopulateInitialPositions(false);
 
@@ -97,12 +120,12 @@ public class SnakeBody : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if(preview)
+        if(ShowBezier)
         {
             BezierUtils.DrawBezierCurve(thicknessModulator);
             BezierUtils.DrawBezierCurve(initialPoseControlPoints);
-            DrawBodyPreview();
         }
+        if(preview) DrawBodyPreview();
         
     }
 
@@ -112,7 +135,7 @@ public class SnakeBody : MonoBehaviour
         segmentPoints[0].position = head.position;
         segmentPoints[0].rotation = head.rotation;
 
-        if(debug) linePreview.SetPosition(0, segmentPoints[0].position); //*testing only
+        if(debug) linePreview.SetPosition(0, segmentPoints[0].position);
 
         for (int i = 1; i < currentSegmentsCount; i++)
         {
@@ -132,8 +155,12 @@ public class SnakeBody : MonoBehaviour
             if(debug) linePreview.SetPosition(i, segmentPoints[i].position);
 
         }
+        // GenerateBodyMesh();
+        // calling this upon every frame causes wonkiness
+        // gizmos are capable of updading correctly but generating a mesh
+        // every frame or at each step of the for loop is kinda bad
+        // not enough to cause an actual gameplay issue but enough for it to look bad
 
-        GenerateBodyMesh();
     }
 
 
@@ -155,10 +182,12 @@ public class SnakeBody : MonoBehaviour
         mesh.Clear();
         //Debug.Log("Mesh Cleared");
 
+        // vertices data
         List<Vector3> inVertices = new List<Vector3>();
         List<Vector3> inNormals = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
+        List<BoneWeight> weights = new List<BoneWeight>();
         //Debug.Log("Lists of vertex information created");
 
         // populate vertices
@@ -173,14 +202,21 @@ public class SnakeBody : MonoBehaviour
             thicknessMapping[slice] = m;
             //Debug.Log($"thickness modulator = {m}");
 
+            // assigning bones positions to the local origin point of the mesh
+            bones[slice].position = localOrigin.position;
+        
+
             for (int i = 0; i < shape.VertCount; i++)
             {
+
+                // assign position data
                 inVertices.Add(
                     head.InverseTransformPoint(
                         localOrigin.GetDisplacedPoint(
                             shape.baseVertices[i].point*bodyThickness*m)));
                 //Debug.Log("added vertices");
 
+                // assign normals data
                 if (shape.isSmooth) {
                     // if the shape is smooth the orientation of the normal is the same as the point
                     inNormals.Add(localOrigin.GetOrientationPoint(shape.baseVertices[i].point));
@@ -190,9 +226,15 @@ public class SnakeBody : MonoBehaviour
                 }
                 //Debug.Log("added normals");
 
-                // todo probably some tweaking for this one
+                // assign UV data
                 uvs.Add(new Vector2(t * currentSegmentsCount / 2, shape.baseVertices[i].c));
                 
+                // assign weight data
+                BoneWeight currentWeight = new BoneWeight();
+                currentWeight.boneIndex0 = slice;
+                currentWeight.weight0 = 1;
+                weights.Add(currentWeight);
+
             }
         }
 
@@ -235,6 +277,20 @@ public class SnakeBody : MonoBehaviour
         mesh.SetNormals(inNormals);
         mesh.SetUVs(0, uvs);
         mesh.SetTriangles(triangles, 0);
+        
+        arr_weights = new BoneWeight[mesh.vertices.Length];
+        for (int i = 0; i < weights.Count; i++)
+        {
+            arr_weights[i] = weights[i];
+        }
+
+        bones[0].parent = transform;
+        for (int i = 1; i < bones.Length; i++)
+        {
+            bones[i].parent = bones[i-1];
+        }
+
+        mesh.boneWeights = arr_weights;
     }
 
     private void PopulateInitialPositions(bool global=true)
