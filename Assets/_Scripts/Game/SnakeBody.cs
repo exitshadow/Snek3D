@@ -104,6 +104,7 @@ public class SnakeBody : MonoBehaviour
         mesh = new Mesh();
         mesh.name = "Snake Body";
         rend.sharedMesh = mesh;
+        rend.bones = bones;
 
 
         if(debug) linePreview.positionCount = initialSegmentsCount;
@@ -140,8 +141,8 @@ public class SnakeBody : MonoBehaviour
         segmentPoints[0].position = head.position;
         segmentPoints[0].rotation = head.rotation;
 
-        rend.bones[0].position = new Vector3(0,0,0);
-        rend.bones[0].rotation = Quaternion.identity;
+        rend.bones[0].position = head.position;
+        rend.bones[0].rotation = head.rotation;
 
         if(debug) linePreview.SetPosition(0, segmentPoints[0].position);
 
@@ -158,7 +159,7 @@ public class SnakeBody : MonoBehaviour
                 ref segmentPoints[i].velocity,
                 movementDamping + i / trailResponse);
             
-            rend.bones[0].position = Vector3.SmoothDamp(
+            rend.bones[i].position = Vector3.SmoothDamp(
                 current,
                 target + bufferDist,
                 ref segmentPoints[i].velocity,
@@ -190,9 +191,10 @@ public class SnakeBody : MonoBehaviour
         else Debug.Log("Snake has attained its maximum length.");
         
     }
+    
     private void GenerateBodyMesh()
     {
-        //Debug.Log("Generating body mesh");
+        Debug.Log("Generating body mesh");
 
         mesh.Clear();
         //Debug.Log("Mesh Cleared");
@@ -299,7 +301,7 @@ public class SnakeBody : MonoBehaviour
             arr_weights[i] = weights[i];
         }
 
-        bones[0].parent = head;
+        //bones[0].parent = head;
         for (int i = 1; i < bones.Length; i++)
         {
             bones[i].parent = bones[i-1];
