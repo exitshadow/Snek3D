@@ -59,6 +59,7 @@ public class SnakeBody : MonoBehaviour
 
     private BoneWeight[] arr_weights; // list is created in GenerateBodyMesh()
     private Transform[] bones;
+    private Matrix4x4[] bindPoses;
     private float[] thicknessMapping; // could add that to OrientedPoint :thinking:
     private Mesh mesh;
     private SkinnedMeshRenderer rend;
@@ -79,6 +80,7 @@ public class SnakeBody : MonoBehaviour
         {
             bones[i] = new GameObject($"Spine_{i}").transform;
         }
+        bindPoses = new Matrix4x4[maxSegmentsCount];
 
         if (shape.isSmooth)
         {
@@ -142,12 +144,13 @@ public class SnakeBody : MonoBehaviour
         segmentPoints[0].rotation = head.rotation;
 
         rend.bones[0].position = head.position;
-        rend.bones[0].rotation = head.rotation;
+        //rend.bones[0].rotation = head.localRotation;
 
         if(debug) linePreview.SetPosition(0, segmentPoints[0].position);
 
         for (int i = 1; i < currentSegmentsCount; i++)
         {
+            float t = i / currentSegmentsCount - 1f;
             Vector3 target = segmentPoints[i-1].position;
             Vector3 current = segmentPoints[i].position;
             Vector3 bufferDist = -head.forward * segmentsInterval;
@@ -166,16 +169,21 @@ public class SnakeBody : MonoBehaviour
                 movementDamping + i / trailResponse);
             
             segmentPoints[i].rotation = Quaternion.LookRotation(dir);
-            rend.bones[i].rotation = Quaternion.LookRotation(dir);
+            rend.bones[i].rotation = segmentPoints[i].rotation;
 
             if(debug) linePreview.SetPosition(i, segmentPoints[i].position);
 
         }
         // GenerateBodyMesh();
         // calling this upon every frame causes wonkiness
-        // gizmos are capable of updading correctly but generating a mesh
-        // every frame or at each step of the for loop is kinda bad
-        // not enough to cause an actual gameplay issue but enough for it to look bad
+        //      =>  it was parenting the body to the head that caused it
+        //          because the calculations for parenting and the SmoothDamp()
+        //          function entered in conflict
+
+        // however,
+        //  it is still worth using bones for deformations
+        //  since we can attach a collider for each bone
+        //  and have manageable physics
 
     }
 
@@ -221,7 +229,8 @@ public class SnakeBody : MonoBehaviour
 
             // assigning bones positions to the local origin point of the mesh
             bones[slice].position = head.InverseTransformPoint(localOrigin.position);
-        
+            bones[slice].rotation = Quaternion.identity;
+            bones[slice].localRotation = Quaternion.identity;
 
             for (int i = 0; i < shape.VertCount; i++)
             {
@@ -301,13 +310,19 @@ public class SnakeBody : MonoBehaviour
             arr_weights[i] = weights[i];
         }
 
-        //bones[0].parent = head;
+        //bones[0].parent = head; // caused the wonkiness
+        bindPoses[0] = bones[0].worldToLocalMatrix;
+
+
         for (int i = 1; i < bones.Length; i++)
         {
             bones[i].parent = bones[i-1];
+            bindPoses[i] = bones[i].worldToLocalMatrix;
+
         }
 
         mesh.boneWeights = arr_weights;
+        mesh.bindposes = bindPoses;
         rend.bones = bones;
         rend.sharedMesh = mesh;
     }
@@ -358,10 +373,22 @@ public class SnakeBody : MonoBehaviour
         Gizmos.color = Color.red;
         // Gizmos.DrawSphere(transform.position, 0.5f);
 
-        Gizmos.color = Color.blue;
         for (int i = 0; i < currentSegmentsCount; i++)
         {
+            Gizmos.color = Color.blue;
             Gizmos.DrawSphere(rend.bones[i].position, 0.05f);
+
+            Gizmos.color = Color.green;
+            Vector3 yAxis = rend.bones[i].TransformDirection(Vector3.up) * .5f;
+            Gizmos.DrawRay(rend.bones[i].position, yAxis);
+
+            Gizmos.color = Color.blue;
+            Vector3 zAxis = rend.bones[i].TransformDirection(Vector3.forward) * .5f;
+            Gizmos.DrawRay(rend.bones[i].position, zAxis);
+
+            Gizmos.color = Color.red;
+            Vector3 xAxis = rend.bones[i].TransformDirection(Vector3.right) * .5f;
+            Gizmos.DrawRay(rend.bones[i].position, xAxis);
             
         }
         Gizmos.color = Color.white;
