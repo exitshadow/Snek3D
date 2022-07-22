@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b436bebf4f9c6da42a5a3e988394ceac
+guid: f1e8e48863cec284b8c858b7918b943c
 ModelImporter:
   serializedVersion: 21300
   internalIDToNameTable: []
@@ -7,8 +7,23 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: SnekBody
-    second: {fileID: 2100000, guid: 38576fc59a4f53145b0760bde89ae533, type: 2}
+      name: Eye
+    second: {fileID: 2100000, guid: 6f399a93ce8516749aadda9222be1c6b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Eyelids
+    second: {fileID: 2100000, guid: 161ebad8ec7b82c408ff658c57e45888, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Mouth
+    second: {fileID: 2100000, guid: a39e630e3e6a36a48b3d1cb349067537, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SnekHead
+    second: {fileID: 2100000, guid: 161ebad8ec7b82c408ff658c57e45888, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -40,7 +55,7 @@ ModelImporter:
     isReadable: 0
   meshes:
     lODScreenPercentages: []
-    globalScale: 0.5
+    globalScale: 50
     meshCompression: 0
     addColliders: 0
     useSRGBMaterialColor: 1
@@ -93,7 +108,7 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
-    globalScale: 0.005
+    globalScale: 0.5
     rootMotionBoneName: 
     hasTranslationDoF: 0
     hasExtraRoot: 0

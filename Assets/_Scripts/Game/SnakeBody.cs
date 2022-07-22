@@ -61,12 +61,13 @@ public class SnakeBody : MonoBehaviour
     private Transform[] bones;
     private float[] thicknessMapping; // could add that to OrientedPoint :thinking:
     private Mesh mesh;
+    private SkinnedMeshRenderer rend;
     private int vc;
     private ushort step;
     private ushort stop;
     private int currentSegmentsCount;
 
-    void Awake()
+    void Start()
     {
         vc = shape.VertCount;
         currentSegmentsCount = initialSegmentsCount;
@@ -76,7 +77,7 @@ public class SnakeBody : MonoBehaviour
         bones = new Transform[maxSegmentsCount];
         for (int i = 0; i < bones.Length; i++)
         {
-            bones[i] = new GameObject("Spine").transform;
+            bones[i] = new GameObject($"Spine_{i}").transform;
         }
 
         if (shape.isSmooth)
@@ -98,10 +99,12 @@ public class SnakeBody : MonoBehaviour
             }
         }
 
+        rend = GetComponent<SkinnedMeshRenderer>();
+
         mesh = new Mesh();
         mesh.name = "Snake Body";
-        GetComponent<SkinnedMeshRenderer>().sharedMesh = mesh;
-        GetComponent<SkinnedMeshRenderer>().bones = bones;
+        rend.sharedMesh = mesh;
+
 
         if(debug) linePreview.positionCount = initialSegmentsCount;
 
@@ -131,9 +134,14 @@ public class SnakeBody : MonoBehaviour
 
     void Update()
     {
+        //transform.position = head.position;
+
         // this is equivalent to the old PopulateInitialPositions()
         segmentPoints[0].position = head.position;
         segmentPoints[0].rotation = head.rotation;
+
+        rend.bones[0].position = new Vector3(0,0,0);
+        rend.bones[0].rotation = Quaternion.identity;
 
         if(debug) linePreview.SetPosition(0, segmentPoints[0].position);
 
@@ -150,7 +158,14 @@ public class SnakeBody : MonoBehaviour
                 ref segmentPoints[i].velocity,
                 movementDamping + i / trailResponse);
             
+            rend.bones[0].position = Vector3.SmoothDamp(
+                current,
+                target + bufferDist,
+                ref segmentPoints[i].velocity,
+                movementDamping + i / trailResponse);
+            
             segmentPoints[i].rotation = Quaternion.LookRotation(dir);
+            rend.bones[i].rotation = Quaternion.LookRotation(dir);
 
             if(debug) linePreview.SetPosition(i, segmentPoints[i].position);
 
@@ -170,7 +185,7 @@ public class SnakeBody : MonoBehaviour
             Debug.Log("Grow the snake");
             linePreview.positionCount++; // * testing only
             currentSegmentsCount++;
-            // GenerateBodyMesh();
+            GenerateBodyMesh();
         }
         else Debug.Log("Snake has attained its maximum length.");
         
@@ -203,7 +218,7 @@ public class SnakeBody : MonoBehaviour
             //Debug.Log($"thickness modulator = {m}");
 
             // assigning bones positions to the local origin point of the mesh
-            bones[slice].position = localOrigin.position;
+            bones[slice].position = head.InverseTransformPoint(localOrigin.position);
         
 
             for (int i = 0; i < shape.VertCount; i++)
@@ -278,19 +293,21 @@ public class SnakeBody : MonoBehaviour
         mesh.SetUVs(0, uvs);
         mesh.SetTriangles(triangles, 0);
         
-        arr_weights = new BoneWeight[mesh.vertices.Length];
+        arr_weights = new BoneWeight[currentSegmentsCount * vc];
         for (int i = 0; i < weights.Count; i++)
         {
             arr_weights[i] = weights[i];
         }
 
-        bones[0].parent = transform;
+        bones[0].parent = head;
         for (int i = 1; i < bones.Length; i++)
         {
             bones[i].parent = bones[i-1];
         }
 
         mesh.boneWeights = arr_weights;
+        rend.bones = bones;
+        rend.sharedMesh = mesh;
     }
 
     private void PopulateInitialPositions(bool global=true)
@@ -336,6 +353,16 @@ public class SnakeBody : MonoBehaviour
                 Gizmos.DrawLine(a, b);
             }
         }
+        Gizmos.color = Color.red;
+        // Gizmos.DrawSphere(transform.position, 0.5f);
+
+        Gizmos.color = Color.blue;
+        for (int i = 0; i < currentSegmentsCount; i++)
+        {
+            Gizmos.DrawSphere(rend.bones[i].position, 0.05f);
+            
+        }
+        Gizmos.color = Color.white;
     }
 
 }
