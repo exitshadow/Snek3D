@@ -27,6 +27,7 @@ public class RiggedBody : MonoBehaviour
     [SerializeField] Transform head;
     [SerializeField] private float movementDamping = .08f;
     [SerializeField] private float trailResponse = 200f;
+    private Vector3[] velocities;
 
     [Space]
     [Header("Debugging")]    
@@ -55,6 +56,8 @@ public class RiggedBody : MonoBehaviour
                 if(i == 0) bones[0].parent = transform;
                 else bones[i].parent = bones[i-1];
 
+                //bones[i].parent = transform;
+
                 bones[i].localPosition = new Vector3(0, 0, -segmentsInterval);
                 bones[i].localRotation = Quaternion.identity;
                 
@@ -67,6 +70,9 @@ public class RiggedBody : MonoBehaviour
         mesh.bindposes = bindPoses;
         skin.sharedMesh = mesh;
         skin.bones = bones;
+
+        // movement setup
+        velocities = new Vector3[maxSegmentsCount];
 
         // intialization
         currentSegmentsCount = initialSegmentsCount;
@@ -90,7 +96,24 @@ public class RiggedBody : MonoBehaviour
 
     private void Update()
     {
-        GenerateBodyMesh();
+        skin.bones[0].position = head.position;
+        skin.bones[0].rotation = head.rotation;
+
+        for (int i = 1; i < maxSegmentsCount; i++)
+        {
+            Vector3 target = skin.bones[i-1].position;
+            Vector3 current = skin.bones[i].position;
+            Vector3 interval = Vector3.forward * segmentsInterval * -1f;
+            Vector3 dir = target - current;
+
+            skin.bones[i].position = Vector3.SmoothDamp(
+                current,
+                target + interval,
+                ref velocities[i],
+                movementDamping + i / trailResponse);
+            
+            skin.bones[i].rotation = Quaternion.LookRotation(dir);
+        }
     }
 
     private void GenerateBodyMesh()
@@ -139,6 +162,12 @@ public class RiggedBody : MonoBehaviour
             float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
             //thicknessMapping[slice] = m;
 
+            // reassigning bones and positions (exp)
+            // bones[slice].localPosition = new Vector3(0, 0, -segmentsInterval);
+            // bones[slice].localRotation = Quaternion.identity;    
+            // bindPoses[slice] = bones[slice].worldToLocalMatrix * transform.localToWorldMatrix;
+            // note that this locks the possibility to intervene on the positions of the
+
             // use the current bone as the origin for drawing a slice
             Transform origin = bones[slice];
 
@@ -155,6 +184,7 @@ public class RiggedBody : MonoBehaviour
                // Vector3 vertex = origin.position + origin.rotation * pos; // mapped to current origin
 
                 // when this is added it follows the parent correctly but doesn't transform okay
+                // with correct binding poses and localRotation it does
                 Vector3 vertex = origin.localPosition * slice + origin.localRotation * pos;
 
                 // assign position
@@ -240,9 +270,9 @@ public class RiggedBody : MonoBehaviour
             Gizmos.DrawSphere(origin.position, .02f);
 
             Gizmos.color = Color.yellow;
-            // if (i < currentSegmentsCount - 1) {
-            //     Gizmos.DrawLine(bones[i].position, bones[i+1].position);
-            // }
+            if (i < currentSegmentsCount - 1) {
+                Gizmos.DrawLine(bones[i].position, bones[i+1].position);
+            }
 
             Gizmos.color = Color.green;
             Vector3 yAxis = origin.TransformDirection(Vector3.up) * .5f;
