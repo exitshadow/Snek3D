@@ -109,17 +109,17 @@ public class SnakeBody : MonoBehaviour
         rend.bones = bones;
 
 
-        if(debug) linePreview.positionCount = initialSegmentsCount;
-
         PopulateInitialPositions(false);
 
         if(debug) {
+            linePreview.positionCount = initialSegmentsCount;
             for (int i = 0; i < currentSegmentsCount; i++)
             {
                 linePreview.SetPosition(i, segmentPoints[i].position);
             }
         }
 
+        BindPoses();
         GenerateBodyMesh();
 
     }
@@ -141,7 +141,7 @@ public class SnakeBody : MonoBehaviour
 
         // this is equivalent to the old PopulateInitialPositions()
         segmentPoints[0].position = head.position;
-        segmentPoints[0].rotation = head.rotation;
+        segmentPoints[0].rotation = Quaternion.Inverse(head.rotation);
 
         rend.bones[0].position = head.position;
         //rend.bones[0].rotation = head.localRotation;
@@ -162,11 +162,7 @@ public class SnakeBody : MonoBehaviour
                 ref segmentPoints[i].velocity,
                 movementDamping + i / trailResponse);
             
-            rend.bones[i].position = Vector3.SmoothDamp(
-                current,
-                target + bufferDist,
-                ref segmentPoints[i].velocity,
-                movementDamping + i / trailResponse);
+            rend.bones[i].position = segmentPoints[i].position;
             
             segmentPoints[i].rotation = Quaternion.LookRotation(dir);
             rend.bones[i].rotation = segmentPoints[i].rotation;
@@ -174,16 +170,6 @@ public class SnakeBody : MonoBehaviour
             if(debug) linePreview.SetPosition(i, segmentPoints[i].position);
 
         }
-        // GenerateBodyMesh();
-        // calling this upon every frame causes wonkiness
-        //      =>  it was parenting the body to the head that caused it
-        //          because the calculations for parenting and the SmoothDamp()
-        //          function entered in conflict
-
-        // however,
-        //  it is still worth using bones for deformations
-        //  since we can attach a collider for each bone
-        //  and have manageable physics
 
     }
 
@@ -202,6 +188,7 @@ public class SnakeBody : MonoBehaviour
     
     private void GenerateBodyMesh()
     {
+
         Debug.Log("Generating body mesh");
 
         mesh.Clear();
@@ -226,12 +213,6 @@ public class SnakeBody : MonoBehaviour
             float m = BezierUtils.CalculateBezierPoint(t, thicknessModulator).position.x;
             thicknessMapping[slice] = m;
             //Debug.Log($"thickness modulator = {m}");
-
-            // assigning bones positions to the local origin point of the mesh
-            //bones[slice].position = head.InverseTransformPoint(localOrigin.position);
-            bones[slice].rotation = Quaternion.identity;
-            bones[slice].localRotation = Quaternion.identity;
-            bones[slice].localPosition = new Vector3(0, 0, segmentsInterval);
 
             for (int i = 0; i < shape.VertCount; i++)
             {
@@ -311,20 +292,20 @@ public class SnakeBody : MonoBehaviour
             arr_weights[i] = weights[i];
         }
 
-        bones[0].parent = transform; // caused the wonkiness
-        bindPoses[0] = bones[0].worldToLocalMatrix * transform.localToWorldMatrix;
+        // bones[0].parent = transform; // if parent is moving this causes wonkiness
+        // bindPoses[0] = bones[0].worldToLocalMatrix * transform.localToWorldMatrix;
 
 
-        for (int i = 1; i < bones.Length; i++)
-        {
-            bones[i].parent = bones[i-1];
-            bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
+        // for (int i = 1; i < bones.Length; i++)
+        // {
+        //     bones[i].parent = bones[i-1];
+        //     bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
 
-        }
+        // }
 
         mesh.boneWeights = arr_weights;
-        mesh.bindposes = bindPoses;
-        rend.bones = bones;
+        //mesh.bindposes = bindPoses;
+        //rend.bones = bones;
         rend.sharedMesh = mesh;
     }
 
@@ -336,8 +317,11 @@ public class SnakeBody : MonoBehaviour
             OrientedPoint localOrigin;
             float t = i / (currentSegmentsCount - 1f);
 
-            if(global) localOrigin = BezierUtils.CalculateBezierPoint(t, initialPoseControlPoints);
-            else localOrigin = BezierUtils.CalculateBezierPoint(t, initialPoseControlPoints, false);
+            //if(global) localOrigin = BezierUtils.CalculateBezierPoint(t, initialPoseControlPoints);
+            //else localOrigin = BezierUtils.CalculateBezierPoint(t, initialPoseControlPoints, false);
+
+            if(global) localOrigin = new OrientedPoint(new Vector3(0,0,segmentsInterval*i), Vector3.forward, new Vector3(0,0,0));
+            else localOrigin = new OrientedPoint(new Vector3(0,0,segmentsInterval), Vector3.forward, new Vector3(0,0,0));
 
             segmentPoints[i] = localOrigin;
             //Debug.Log($"position at index {i} : {positionsHistory[i].position}");
@@ -351,6 +335,22 @@ public class SnakeBody : MonoBehaviour
             thicknessMapping[i] = m;
 
         }
+    }
+
+    private void BindPoses()
+    {
+        // do all the bony setup for all the bones in the whole array
+        bones[0].parent = transform;
+        bindPoses[0] = bones[0].worldToLocalMatrix * transform.localToWorldMatrix;
+        
+        for (int i = 1; i < maxSegmentsCount; i++)
+        {
+            bones[i].parent = bones[i-1];
+            bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
+        }
+
+        mesh.bindposes = bindPoses;
+        rend.bones = bones;
     }
 
     private void DrawBodyPreview()

@@ -9,7 +9,6 @@ using UnityEngine;
 //  dump PopulateInitialPositions()
 //  solve wonky parenting issue
 
-
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(SkinnedMeshRenderer))]
 public class RiggedBody : MonoBehaviour
@@ -44,11 +43,8 @@ public class RiggedBody : MonoBehaviour
     private Matrix4x4[] bindPoses;
     private BoneWeight[] weights;
 
-    void Start()
+    private void Awake()
     {
-
-        thicknessMapping = new float[maxSegmentsCount];
-        
         // rig setup
         bones = new Transform[maxSegmentsCount];
         bindPoses = new Matrix4x4[maxSegmentsCount];
@@ -68,26 +64,36 @@ public class RiggedBody : MonoBehaviour
         // mesh setup
         mesh = new Mesh();
         mesh.name = "Snake Body";
+        mesh.bindposes = bindPoses;
         skin.sharedMesh = mesh;
         skin.bones = bones;
 
         // intialization
         currentSegmentsCount = initialSegmentsCount;
+
+        thicknessMapping = new float[maxSegmentsCount];
+        for (int i = 0; i < thicknessMapping.Length; i++)
+        {
+            float t = i / (currentSegmentsCount - 1f);
+            float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
+            thicknessMapping[i] = m;
+        }
+
         GenerateBodyMesh();
     }
 
 
-    void OnDrawGizmos()
+    private void OnDrawGizmos()
     {
         if (debug) DrawBodyPreview();
     }
 
-    void Update()
+    private void Update()
     {
-        //GenerateBodyMesh();
+        GenerateBodyMesh();
     }
 
-    void GenerateBodyMesh()
+    private void GenerateBodyMesh()
     {
         // shape management
         int vc = shape.VertCount;
@@ -144,7 +150,12 @@ public class RiggedBody : MonoBehaviour
                 float v = shape.baseVertices[i].c;
 
                 Vector3 pos = point * thickness * m; // relative position on the slice
-                Vector3 vertex = origin.localPosition + origin.localRotation * pos; // mapped to current origin
+
+                // when this is added it transforms correctly but doesn't follow the parent correctly
+               // Vector3 vertex = origin.position + origin.rotation * pos; // mapped to current origin
+
+                // when this is added it follows the parent correctly but doesn't transform okay
+                Vector3 vertex = origin.localPosition * slice + origin.rotation * pos;
 
                 // assign position
                 vertices.Add(vertex);
@@ -210,7 +221,7 @@ public class RiggedBody : MonoBehaviour
         
         mesh.boneWeights = weights;
         skin.sharedMesh = mesh;
-        skin.bones = bones;
+        //skin.bones = bones;
 
     }
 
@@ -221,15 +232,17 @@ public class RiggedBody : MonoBehaviour
             float t = i / (currentSegmentsCount - 1f);
             float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
 
-            Transform origin = bones[i];
+            Transform origin = skin.bones[i];
+            // Debug.Log(skin.bones.Length);
+            // Debug.Log(i);
 
             Gizmos.color = Color.black;
             Gizmos.DrawSphere(origin.position, .02f);
 
             Gizmos.color = Color.yellow;
-            if (i < maxSegmentsCount - 1) {
-                Gizmos.DrawLine(bones[i].position, bones[i+1].position);
-            }
+            // if (i < currentSegmentsCount - 1) {
+            //     Gizmos.DrawLine(bones[i].position, bones[i+1].position);
+            // }
 
             Gizmos.color = Color.green;
             Vector3 yAxis = origin.TransformDirection(Vector3.up) * .5f;
