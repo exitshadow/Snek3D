@@ -155,7 +155,7 @@ public class RiggedBody : MonoBehaviour
                // Vector3 vertex = origin.position + origin.rotation * pos; // mapped to current origin
 
                 // when this is added it follows the parent correctly but doesn't transform okay
-                Vector3 vertex = origin.localPosition * slice + origin.rotation * pos;
+                Vector3 vertex = origin.localPosition * slice + origin.localRotation * pos;
 
                 // assign position
                 vertices.Add(vertex);
