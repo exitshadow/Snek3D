@@ -9,7 +9,7 @@ using UnityEngine;
 //  dump PopulateInitialPositions()
 //  solve wonky parenting issue
 
-[ExecuteInEditMode]
+
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(SkinnedMeshRenderer))]
 public class RiggedBody : MonoBehaviour
@@ -19,8 +19,9 @@ public class RiggedBody : MonoBehaviour
     [SerializeField] private float thickness = .5f;
     [SerializeField] private Transform[] thicknessCurve = new Transform[4];
     [SerializeField] private int initialSegmentsCount = 10;
-    [SerializeField] private int maxSegmentsCount = 50;
+    [SerializeField] private int maxSegmentsCount = 20;
     [SerializeField] private float segmentsInterval = .5f;
+    [SerializeField] private SkinnedMeshRenderer skin;
 
     [Space]
     [Header("Rigging Animation")]
@@ -34,7 +35,6 @@ public class RiggedBody : MonoBehaviour
     [SerializeField] private LineRenderer linePreview;
 
     // mesh gen internal data
-    private SkinnedMeshRenderer skin;
     private Mesh mesh;
     private int currentSegmentsCount;
     private float[] thicknessMapping;
@@ -44,8 +44,11 @@ public class RiggedBody : MonoBehaviour
     private Matrix4x4[] bindPoses;
     private BoneWeight[] weights;
 
-    private void Start()
+    void Start()
     {
+
+        thicknessMapping = new float[maxSegmentsCount];
+        
         // rig setup
         bones = new Transform[maxSegmentsCount];
         bindPoses = new Matrix4x4[maxSegmentsCount];
@@ -56,16 +59,13 @@ public class RiggedBody : MonoBehaviour
                 if(i == 0) bones[0].parent = transform;
                 else bones[i].parent = bones[i-1];
 
-                bones[i].localPosition = new Vector3(0, 0, segmentsInterval);
+                bones[i].localPosition = new Vector3(0, 0, -segmentsInterval);
                 bones[i].localRotation = Quaternion.identity;
                 
                 bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
             
-
-
         // mesh setup
-        skin = GetComponent<SkinnedMeshRenderer>();
         mesh = new Mesh();
         mesh.name = "Snake Body";
         skin.sharedMesh = mesh;
@@ -76,7 +76,18 @@ public class RiggedBody : MonoBehaviour
         GenerateBodyMesh();
     }
 
-    private void GenerateBodyMesh()
+
+    void OnDrawGizmos()
+    {
+        if (debug) DrawBodyPreview();
+    }
+
+    void Update()
+    {
+        //GenerateBodyMesh();
+    }
+
+    void GenerateBodyMesh()
     {
         // shape management
         int vc = shape.VertCount;
@@ -120,7 +131,7 @@ public class RiggedBody : MonoBehaviour
             // mapping thickness curve to points in slice
             float t = slice / (currentSegmentsCount - 1f);
             float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
-            thicknessMapping[slice] = m;
+            //thicknessMapping[slice] = m;
 
             // use the current bone as the origin for drawing a slice
             Transform origin = bones[slice];
@@ -136,7 +147,7 @@ public class RiggedBody : MonoBehaviour
                 Vector3 vertex = origin.localPosition + origin.localRotation * pos; // mapped to current origin
 
                 // assign position
-                vertices.Add(transform.InverseTransformPoint(vertex));
+                vertices.Add(vertex);
 
                 // assign normal
                 if (shape.isSmooth) {
@@ -199,7 +210,53 @@ public class RiggedBody : MonoBehaviour
         
         mesh.boneWeights = weights;
         skin.sharedMesh = mesh;
+        skin.bones = bones;
 
+    }
+
+    void DrawBodyPreview()
+    {
+        for (int i = 0; i < maxSegmentsCount; i++)
+        {
+            float t = i / (currentSegmentsCount - 1f);
+            float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
+
+            Transform origin = bones[i];
+
+            Gizmos.color = Color.black;
+            Gizmos.DrawSphere(origin.position, .02f);
+
+            Gizmos.color = Color.yellow;
+            if (i < maxSegmentsCount - 1) {
+                Gizmos.DrawLine(bones[i].position, bones[i+1].position);
+            }
+
+            Gizmos.color = Color.green;
+            Vector3 yAxis = origin.TransformDirection(Vector3.up) * .5f;
+            Gizmos.DrawRay(origin.position, yAxis);
+
+            Gizmos.color = Color.blue;
+            Vector3 zAxis = origin.TransformDirection(Vector3.forward) * .5f;
+            Gizmos.DrawRay(origin.position, zAxis);
+
+            Gizmos.color = Color.red;
+            Vector3 xAxis = origin.TransformDirection(Vector3.right) * .5f;
+            Gizmos.DrawRay(origin.position, xAxis);
+
+            Gizmos.color = Color.white;
+            for (int v = 0; v < shape.VertCount - 1 ; v++)
+            {
+                Vector3 pointA = shape.baseVertices[v].point;
+                Vector3 posA = pointA * thickness * m; // relative position on the slice
+                Vector3 a = origin.position + origin.rotation * posA; // mapped to current origin
+                
+                Vector3 pointB = shape.baseVertices[v + 1].point;
+                Vector3 posB = pointA * thickness * m; // relative position on the slice
+                Vector3 b = origin.position + origin.rotation * posB; // mapped to current origin
+
+                Gizmos.DrawLine(a,b);
+            }
+        }
     }
 
 

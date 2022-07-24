@@ -228,9 +228,10 @@ public class SnakeBody : MonoBehaviour
             //Debug.Log($"thickness modulator = {m}");
 
             // assigning bones positions to the local origin point of the mesh
-            bones[slice].position = head.InverseTransformPoint(localOrigin.position);
+            //bones[slice].position = head.InverseTransformPoint(localOrigin.position);
             bones[slice].rotation = Quaternion.identity;
             bones[slice].localRotation = Quaternion.identity;
+            bones[slice].localPosition = new Vector3(0, 0, segmentsInterval);
 
             for (int i = 0; i < shape.VertCount; i++)
             {
@@ -310,14 +311,14 @@ public class SnakeBody : MonoBehaviour
             arr_weights[i] = weights[i];
         }
 
-        //bones[0].parent = head; // caused the wonkiness
-        bindPoses[0] = bones[0].worldToLocalMatrix;
+        bones[0].parent = transform; // caused the wonkiness
+        bindPoses[0] = bones[0].worldToLocalMatrix * transform.localToWorldMatrix;
 
 
         for (int i = 1; i < bones.Length; i++)
         {
             bones[i].parent = bones[i-1];
-            bindPoses[i] = bones[i].worldToLocalMatrix;
+            bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
 
         }
 
