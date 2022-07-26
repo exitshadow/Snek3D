@@ -5,17 +5,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-// todo
-//  adapt snake body to better rigging logic DONE
-//  dump bezier things except for the thickness curve DONE
-//  dump PopulateInitialPositions() DONE
-//  solve wonky parenting issue
-// todo
-//  so the issue is
-//  -   when all bones are parented to the current transform, the bone positions are well
-//      updated, but the rigging / binding just goes through the window
-//  -   ... and conversely, when bones are parented to each other the rigging is successful
-//      but the SmoothDamp() just goes all over the place
+// * UP AND RUNNING FOR FIRST ROUND OF GENERATION
+// TODO test stability with GrowSnake()
+// TODO refine capsule colliders
 
 
 [RequireComponent(typeof(MeshFilter))]
@@ -128,11 +120,17 @@ public class RiggedBody : MonoBehaviour
                 else characterJoints[i].connectedBody = bones[i-1].GetComponent<Rigidbody>();
             }
 
-            if(i == 0)  bones[0].parent = transform;
-            else bones[i].parent = transform;
+            if(i == 0) {
+                bones[0].parent = transform;
+                bones[0].localPosition = Vector3.zero;
+            } else {
+                bones[i].parent = transform;
                 //bones[i].parent = bones[i-1];
+                bones[i].localPosition = new Vector3(0,0, -segmentsInterval * (i - 1));
 
-            bones[i].localPosition = new Vector3(0, 0, -segmentsInterval * i);
+            }
+
+            //bones[i].localPosition = new Vector3(0, 0, -segmentsInterval * i);
             bones[i].localRotation = Quaternion.identity;
             
             bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
@@ -201,14 +199,7 @@ public class RiggedBody : MonoBehaviour
                 Vector3 point = shape.baseVertices[i].point;
                 Vector3 normal = shape.baseVertices[i].normal;
                 float v = shape.baseVertices[i].c;
-
                 Vector3 pos = point * thickness * m; // relative position on the slice
-
-                // when this is added it transforms correctly but doesn't follow the parent correctly
-               // Vector3 vertex = origin.position + origin.rotation * pos; // mapped to current origin
-
-                // when this is added it follows the parent correctly but doesn't transform okay
-                // with correct binding poses and localRotation it does
                 Vector3 vertex = origin.localPosition + origin.localRotation * pos;
 
                 // assign position
@@ -308,6 +299,18 @@ public class RiggedBody : MonoBehaviour
             
             skin.bones[i].rotation = Quaternion.LookRotation(dir);
         }
+    }
+
+    public void GrowSnake() {
+        if (currentSegmentsCount < maxSegmentsCount)
+        {
+            Debug.Log("Grow the snake");
+            linePreview.positionCount++; // * testing only
+            currentSegmentsCount++;
+            GenerateBodyMesh();
+        }
+        else Debug.Log("Snake has attained its maximum length.");
+        
     }
 
     /// <summary>

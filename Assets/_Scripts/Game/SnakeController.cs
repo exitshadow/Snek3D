@@ -11,10 +11,13 @@ public class SnakeController : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Collision Enter!");
+        Debug.Log("Trigger Enter!");
         if (other.CompareTag("GrowObject"))
         {
-            body.GetComponent<SnakeBody>().GrowSnake();
+            if (body.GetComponent<RiggedBody>() != null)
+            {
+                body.GetComponent<RiggedBody>().GrowSnake();
+            }
         }
     }
 
