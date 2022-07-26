@@ -55,6 +55,9 @@ public class RiggedBody : MonoBehaviour
 
     private void Awake()
     {
+        // intialization
+        currentSegmentsCount = initialSegmentsCount;
+
         // rig setup
         rigidbodies = new Rigidbody[maxSegmentsCount];
         capsuleColliders = new CapsuleCollider[maxSegmentsCount];
@@ -74,9 +77,6 @@ public class RiggedBody : MonoBehaviour
 
         // movement setup
         velocities = new Vector3[maxSegmentsCount];
-
-        // intialization
-        currentSegmentsCount = initialSegmentsCount;
 
         thicknessMapping = new float[maxSegmentsCount];
         for (int i = 0; i < thicknessMapping.Length; i++)
@@ -110,12 +110,12 @@ public class RiggedBody : MonoBehaviour
             GameObject prefab = Instantiate(riggingPrefab as GameObject);
             bones[i] = prefab.transform;
             // would be good to refactor this...
-            rigidbodies[i] = bones[i].gameObject.GetComponent<Rigidbody>() as Rigidbody;
-            capsuleColliders[i] = bones[i].gameObject.GetComponent<CapsuleCollider>() as CapsuleCollider;
+            rigidbodies[i] = bones[i].gameObject.GetComponent<Rigidbody>();
+            capsuleColliders[i] = bones[i].gameObject.GetComponent<CapsuleCollider>();
 
             if(bones[i].gameObject.GetComponent<CharacterJoint>() != null)
             {
-                characterJoints[i] = bones[i].gameObject.GetComponent<CharacterJoint>() as CharacterJoint;
+                characterJoints[i] = bones[i].gameObject.GetComponent<CharacterJoint>();
                 if(i==0) characterJoints[0].connectedBody = head.GetComponent<Rigidbody>();
                 else characterJoints[i].connectedBody = bones[i-1].GetComponent<Rigidbody>();
             }
@@ -135,6 +135,12 @@ public class RiggedBody : MonoBehaviour
             
             bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
         }
+
+        for (int i = currentSegmentsCount + 1; i < capsuleColliders.Length ; i++)
+        {
+            bones[i].gameObject.GetComponent<CapsuleCollider>().enabled = false;
+        }
+
     }
 
     /// <summary>
@@ -184,14 +190,8 @@ public class RiggedBody : MonoBehaviour
             float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
             //thicknessMapping[slice] = m;
 
-            // reassigning bones and positions (exp)
-            // bones[slice].localPosition = new Vector3(0, 0, -segmentsInterval);
-            // bones[slice].localRotation = Quaternion.identity;    
-            // bindPoses[slice] = bones[slice].worldToLocalMatrix * transform.localToWorldMatrix;
-            // note that this locks the possibility to intervene on the positions of the
-
             // use the current bone as the origin for drawing a slice
-            Transform origin = bones[slice];
+            Transform origin = skin.bones[slice];
 
             // looping in the vertices around each slice for extrusion
             for (int i = 0; i < vc; i++)
@@ -200,7 +200,7 @@ public class RiggedBody : MonoBehaviour
                 Vector3 normal = shape.baseVertices[i].normal;
                 float v = shape.baseVertices[i].c;
                 Vector3 pos = point * thickness * m; // relative position on the slice
-                Vector3 vertex = origin.localPosition + origin.localRotation * pos;
+                Vector3 vertex = bones[0].TransformPoint(origin.position) + origin.localRotation * pos;
 
                 // assign position
                 vertices.Add(vertex);
@@ -307,6 +307,15 @@ public class RiggedBody : MonoBehaviour
             Debug.Log("Grow the snake");
             linePreview.positionCount++; // * testing only
             currentSegmentsCount++;
+
+            // reassign bidposes
+            for (int i = 0; i < bones.Length; i++)
+            {
+                bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
+            }
+
+            bones[currentSegmentsCount].gameObject.GetComponent<CapsuleCollider>().enabled = true;
+
             GenerateBodyMesh();
         }
         else Debug.Log("Snake has attained its maximum length.");
