@@ -214,6 +214,12 @@ public class SnakeBody : MonoBehaviour
             thicknessMapping[slice] = m;
             //Debug.Log($"thickness modulator = {m}");
 
+            //assigning bones positions to the local origin point of the mesh
+            // bones[slice].position = head.InverseTransformPoint(localOrigin.position);
+            // bones[slice].rotation = Quaternion.identity;
+            // bones[slice].localRotation = Quaternion.identity;
+            // bones[slice].localPosition = new Vector3(0, 0, segmentsInterval);
+
             for (int i = 0; i < shape.VertCount; i++)
             {
 

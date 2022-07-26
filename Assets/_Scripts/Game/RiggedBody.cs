@@ -1,13 +1,22 @@
+using System;
 using System.Runtime.Serialization;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 // todo
-//  adapt snake body to better rigging logic
-//  dump bezier things except for the thickness curve
-//  dump PopulateInitialPositions()
+//  adapt snake body to better rigging logic DONE
+//  dump bezier things except for the thickness curve DONE
+//  dump PopulateInitialPositions() DONE
 //  solve wonky parenting issue
+// todo
+//  so the issue is
+//  -   when all bones are parented to the current transform, the bone positions are well
+//      updated, but the rigging / binding just goes through the window
+//  -   ... and conversely, when bones are parented to each other the rigging is successful
+//      but the SmoothDamp() just goes all over the place
+
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(SkinnedMeshRenderer))]
@@ -22,12 +31,15 @@ public class RiggedBody : MonoBehaviour
     [SerializeField] private float segmentsInterval = .5f;
     [SerializeField] private SkinnedMeshRenderer skin;
 
+
     [Space]
     [Header("Rigging Animation")]
     [SerializeField] Transform head;
     [SerializeField] private float movementDamping = .08f;
     [SerializeField] private float trailResponse = 200f;
+    [SerializeField] private GameObject riggingPrefab;
     private Vector3[] velocities;
+    
 
     [Space]
     [Header("Debugging")]    
@@ -38,31 +50,28 @@ public class RiggedBody : MonoBehaviour
     private Mesh mesh;
     private int currentSegmentsCount;
     private float[] thicknessMapping;
+    private BoneWeight[] weights;
 
     // rigging gen internal data
     private Transform[] bones;
     private Matrix4x4[] bindPoses;
-    private BoneWeight[] weights;
+
+    // rigging dynamics
+    private Rigidbody[] rigidbodies;
+    private CharacterJoint[] characterJoints;
+    private CapsuleCollider[] capsuleColliders;
 
     private void Awake()
     {
         // rig setup
+        rigidbodies = new Rigidbody[maxSegmentsCount];
+        capsuleColliders = new CapsuleCollider[maxSegmentsCount];
+        characterJoints = new CharacterJoint[maxSegmentsCount];
+        
         bones = new Transform[maxSegmentsCount];
         bindPoses = new Matrix4x4[maxSegmentsCount];
-            for (int i = 0; i < bones.Length; i++)
-            {
-                bones[i] = new GameObject($"Spine_{i}").transform;
 
-                if(i == 0) bones[0].parent = transform;
-                else bones[i].parent = bones[i-1];
-
-                //bones[i].parent = transform;
-
-                bones[i].localPosition = new Vector3(0, 0, -segmentsInterval);
-                bones[i].localRotation = Quaternion.identity;
-                
-                bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
-            }
+        GenerateBodyArmature();
             
         // mesh setup
         mesh = new Mesh();
@@ -96,26 +105,43 @@ public class RiggedBody : MonoBehaviour
 
     private void Update()
     {
-        skin.bones[0].position = head.position;
-        skin.bones[0].rotation = head.rotation;
+        //Move();
+    }
 
-        for (int i = 1; i < maxSegmentsCount; i++)
+    /// <summary>
+    /// Generates all bone's transforms and set up of physics
+    /// </summary>
+    private void GenerateBodyArmature()
+    {
+        for (int i = 0; i < bones.Length; i++)
         {
-            Vector3 target = skin.bones[i-1].position;
-            Vector3 current = skin.bones[i].position;
-            Vector3 interval = Vector3.forward * segmentsInterval * -1f;
-            Vector3 dir = target - current;
+            GameObject prefab = Instantiate(riggingPrefab as GameObject);
+            bones[i] = prefab.transform;
+            // would be good to refactor this...
+            rigidbodies[i] = bones[i].gameObject.GetComponent<Rigidbody>() as Rigidbody;
+            capsuleColliders[i] = bones[i].gameObject.GetComponent<CapsuleCollider>() as CapsuleCollider;
 
-            skin.bones[i].position = Vector3.SmoothDamp(
-                current,
-                target + interval,
-                ref velocities[i],
-                movementDamping + i / trailResponse);
+            if(bones[i].gameObject.GetComponent<CharacterJoint>() != null)
+            {
+                characterJoints[i] = bones[i].gameObject.GetComponent<CharacterJoint>() as CharacterJoint;
+                if(i==0) characterJoints[0].connectedBody = head.GetComponent<Rigidbody>();
+                else characterJoints[i].connectedBody = bones[i-1].GetComponent<Rigidbody>();
+            }
+
+            if(i == 0)  bones[0].parent = transform;
+            else bones[i].parent = transform;
+                //bones[i].parent = bones[i-1];
+
+            bones[i].localPosition = new Vector3(0, 0, -segmentsInterval * i);
+            bones[i].localRotation = Quaternion.identity;
             
-            skin.bones[i].rotation = Quaternion.LookRotation(dir);
+            bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
         }
     }
 
+    /// <summary>
+    /// Generates the mesh with bones transforms positions. Still wonky.
+    /// </summary>
     private void GenerateBodyMesh()
     {
         // shape management
@@ -150,10 +176,8 @@ public class RiggedBody : MonoBehaviour
         List<int> triangles = new List<int>();
         List<BoneWeight> boneWeights = new List<BoneWeight>();
         Vector3[] origins = new Vector3[currentSegmentsCount];
-        
 
-        // populate vertices
-
+        #region populate vertices
         // looping through each slice
         for (int slice = 0; slice < currentSegmentsCount; slice++)
         {
@@ -185,7 +209,7 @@ public class RiggedBody : MonoBehaviour
 
                 // when this is added it follows the parent correctly but doesn't transform okay
                 // with correct binding poses and localRotation it does
-                Vector3 vertex = origin.localPosition * slice + origin.localRotation * pos;
+                Vector3 vertex = origin.localPosition + origin.localRotation * pos;
 
                 // assign position
                 vertices.Add(vertex);
@@ -207,7 +231,9 @@ public class RiggedBody : MonoBehaviour
                 boneWeights.Add(weight);
             }
         }
+        #endregion
 
+        #region draw triangles
         // adding triangle indices
         // loop in slices
         for (int s = 0; s < currentSegmentsCount - 1; s++)
@@ -241,6 +267,8 @@ public class RiggedBody : MonoBehaviour
             }
         }
 
+        #endregion
+
         mesh.SetVertices(vertices);
         mesh.SetNormals(normals);
         mesh.SetUVs(0, uvs);
@@ -255,6 +283,36 @@ public class RiggedBody : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Moves all bones along with a SmoothDamp
+    /// </summary>
+    private void Move()
+    {
+        for (int i = 0; i < maxSegmentsCount; i++)
+        {
+            Vector3 target;
+                if (i == 0) {
+                    target = head.position;
+                } else target = skin.bones[i-1].position;
+
+            Vector3 interval = Vector3.forward * segmentsInterval * -1f;
+            Vector3 current = skin.bones[i].position;
+            
+            Vector3 dir = target - current;
+
+            skin.bones[i].position = Vector3.SmoothDamp(
+                current,
+                target + interval,
+                ref velocities[i],
+                movementDamping + i / trailResponse);
+            
+            skin.bones[i].rotation = Quaternion.LookRotation(dir);
+        }
+    }
+
+    /// <summary>
+    /// Draws the axis from the bones but still can't figure how to draw the circles round ha
+    /// </summary>
     void DrawBodyPreview()
     {
         for (int i = 0; i < maxSegmentsCount; i++)
