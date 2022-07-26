@@ -193,6 +193,7 @@ public class RiggedBody : MonoBehaviour
             // use the current bone as the origin for drawing a slice
             Transform origin = skin.bones[slice];
 
+
             // looping in the vertices around each slice for extrusion
             for (int i = 0; i < vc; i++)
             {
@@ -200,7 +201,7 @@ public class RiggedBody : MonoBehaviour
                 Vector3 normal = shape.baseVertices[i].normal;
                 float v = shape.baseVertices[i].c;
                 Vector3 pos = point * thickness * m; // relative position on the slice
-                Vector3 vertex = bones[0].TransformPoint(origin.position) + origin.localRotation * pos;
+                Vector3 vertex = origin.localPosition + origin.localRotation * pos;
 
                 // assign position
                 vertices.Add(vertex);
@@ -215,11 +216,13 @@ public class RiggedBody : MonoBehaviour
                 // assign uv
                 uvs.Add(new Vector2(t * currentSegmentsCount / 2, v));
 
+                bindPoses[slice] = origin.worldToLocalMatrix * transform.localToWorldMatrix;
                 // assign weights
                 BoneWeight weight = new BoneWeight();
                 weight.boneIndex0 = slice;
                 weight.weight0 = 1;
                 boneWeights.Add(weight);
+                mesh.bindposes = bindPoses;
             }
         }
         #endregion
@@ -311,7 +314,7 @@ public class RiggedBody : MonoBehaviour
             // reassign bidposes
             for (int i = 0; i < bones.Length; i++)
             {
-                bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
+                //bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
 
             bones[currentSegmentsCount].gameObject.GetComponent<CapsuleCollider>().enabled = true;
