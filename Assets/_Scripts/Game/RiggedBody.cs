@@ -105,7 +105,7 @@ public class RiggedBody : MonoBehaviour
 
     private void Update()
     {
-        //Move();
+        Move();
     }
 
     /// <summary>
