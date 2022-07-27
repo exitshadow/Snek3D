@@ -2063,8 +2063,8 @@ MonoBehaviour:
   - {fileID: 363215390}
   - {fileID: 758531691}
   - {fileID: 1038529950}
-  initialSegmentsCount: 10
-  maxSegmentsCount: 15
+  initialSegmentsCount: 15
+  maxSegmentsCount: 30
   segmentsInterval: 0.2
   skin: {fileID: 648716242}
   head: {fileID: 665819500}
