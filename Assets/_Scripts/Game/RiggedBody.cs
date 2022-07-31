@@ -55,6 +55,7 @@ public class RiggedBody : MonoBehaviour
 
     private void Awake()
     {
+
         // intialization
         currentSegmentsCount = initialSegmentsCount;
 
@@ -286,7 +287,7 @@ public class RiggedBody : MonoBehaviour
         {
             Vector3 target;
                 if (i == 0) {
-                    target = head.position;
+                    target = head.position + Vector3.forward * segmentsInterval;
                 } else target = skin.bones[i-1].position;
 
             Vector3 interval = Vector3.forward * segmentsInterval * -1f;
@@ -294,11 +295,16 @@ public class RiggedBody : MonoBehaviour
             
             Vector3 dir = target - current;
 
-            skin.bones[i].position = Vector3.SmoothDamp(
-                current,
-                target + interval,
-                ref velocities[i],
-                movementDamping + i / trailResponse);
+            if (i == 0) skin.bones[i].position = head.position;
+            else
+            {
+                skin.bones[i].position = Vector3.SmoothDamp(
+                    current,
+                    target + interval,
+                    ref velocities[i],
+                    movementDamping + i / trailResponse);
+            }
+
             
             skin.bones[i].rotation = Quaternion.LookRotation(dir);
         }
