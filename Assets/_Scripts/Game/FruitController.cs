@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // TODO
-//  add coroutine to count time before enabling collisions again
-//  prolem when GrabOrigin is the grabber :-(
+//  add coroutine to count time before enabling collisions again * DONE
+//  prolem when GrabOrigin is the grabber :-( * DONE :-)
 
+[RequireComponent(typeof(CapsuleCollider))]
 public class FruitController : MonoBehaviour
 {
      private Rigidbody rb;
@@ -25,7 +26,7 @@ public class FruitController : MonoBehaviour
      }
 
      private void Start() {
-         triggerCapsule = GetComponents<CapsuleCollider>()[1];
+         triggerCapsule = GetComponents<CapsuleCollider>()[0];
          triggerCapsule.enabled = true;
          rb = GetComponent<Rigidbody>();
          rb.isKinematic = true;
@@ -40,13 +41,19 @@ public class FruitController : MonoBehaviour
              triggerCapsule.enabled = false;
          } else
          {
-            triggerCapsule.enabled = true;
+            //triggerCapsule.enabled = true;
             rb.isKinematic = false;
          } 
      }
 
+     IEnumerator WaitEnableCollider() {
+         yield return new WaitForSeconds(2);
+         triggerCapsule.enabled = true;
+     }
+
      public void Release() {
          isGrabbed = false;
+         StartCoroutine(WaitEnableCollider());
          Debug.Log("Release");
      }
 }
