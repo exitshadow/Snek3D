@@ -91,10 +91,10 @@ public class RiggedBody : MonoBehaviour
     }
 
 
-    private void OnDrawGizmos()
-    {
-        if (debug) DrawBodyPreview();
-    }
+    // private void OnDrawGizmos()
+    // {
+    //     if (debug) DrawBodyPreview();
+    // }
 
     private void Update()
     {

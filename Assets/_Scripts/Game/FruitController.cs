@@ -11,8 +11,13 @@ public class FruitController : MonoBehaviour
 {
      private Rigidbody rb;
      private Transform grabber;
-     private bool isGrabbed;
      private CapsuleCollider triggerCapsule;
+     private bool isGrabbed;
+     private bool isDropped;
+
+     [HideInInspector] public bool IsDropped {
+         get { return isDropped; }
+     }
 
      private void OnTriggerEnter(Collider other)
      {
@@ -23,6 +28,11 @@ public class FruitController : MonoBehaviour
              Debug.Log(grabber);
              isGrabbed = true;
          }
+     }
+
+     private void OnCollisionExit()
+     {
+         isDropped = false;
      }
 
      private void Start() {
@@ -53,6 +63,7 @@ public class FruitController : MonoBehaviour
 
      public void Release() {
          isGrabbed = false;
+         isDropped = true;
          StartCoroutine(WaitEnableCollider());
          Debug.Log("Release");
      }

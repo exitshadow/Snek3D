@@ -44,27 +44,27 @@ public static class BezierUtils
         return new OrientedPoint(pos, rot, new Vector3(0,0,0));
     }
 
-    public static void DrawBezierCurve(Transform[] controls)
-    {
-        // start point
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(controls[0].position, .05f);
-        // control points
-        Gizmos.color = Color.blue;
-        Gizmos.DrawSphere(controls[1].position, .03f);
-        Gizmos.DrawSphere(controls[2].position, .03f);
-        // end point
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(controls[3].position, .03f);
-        Gizmos.color = Color.white;
+    // public static void DrawBezierCurve(Transform[] controls)
+    // {
+    //     // start point
+    //     Gizmos.color = Color.red;
+    //     Gizmos.DrawSphere(controls[0].position, .05f);
+    //     // control points
+    //     Gizmos.color = Color.blue;
+    //     Gizmos.DrawSphere(controls[1].position, .03f);
+    //     Gizmos.DrawSphere(controls[2].position, .03f);
+    //     // end point
+    //     Gizmos.color = Color.red;
+    //     Gizmos.DrawSphere(controls[3].position, .03f);
+    //     Gizmos.color = Color.white;
 
-        Handles.DrawBezier(
-            controls[0].position,
-            controls[3].position,
-            controls[1].position,
-            controls[2].position,
-            Color.white,
-            EditorGUIUtility.whiteTexture,
-            1f);
-    }
+    //     Handles.DrawBezier(
+    //         controls[0].position,
+    //         controls[3].position,
+    //         controls[1].position,
+    //         controls[2].position,
+    //         Color.white,
+    //         EditorGUIUtility.whiteTexture,
+    //         1f);
+    // }
 }
