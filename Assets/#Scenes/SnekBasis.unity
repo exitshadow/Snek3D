@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.23388176, g: 0.30790934, b: 0.2959333, a: 1}
+  m_IndirectSpecularColor: {r: 0.23388225, g: 0.30790868, b: 0.29593372, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -2028,6 +2028,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
         type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: -88932802720630465, guid: aee171b389e9e6a48b5cd3a140f2da26,
+        type: 3}
+    - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
+        type: 3}
       propertyPath: m_DirtyAABB
       value: 0
       objectReference: {fileID: 0}
@@ -2063,12 +2069,32 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
         type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: a39e630e3e6a36a48b3d1cb349067537, type: 2}
+    - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
+        type: 3}
+      propertyPath: m_Materials.Array.data[2]
+      value: 
+      objectReference: {fileID: 2100000, guid: 161ebad8ec7b82c408ff658c57e45888, type: 2}
+    - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
+        type: 3}
+      propertyPath: m_Materials.Array.data[3]
+      value: 
+      objectReference: {fileID: 2100000, guid: 6f399a93ce8516749aadda9222be1c6b, type: 2}
+    - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
+        type: 3}
       propertyPath: m_BlendShapeWeights.Array.size
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
         type: 3}
       propertyPath: m_BlendShapeWeights.Array.data[0]
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
+        type: 3}
+      propertyPath: m_BlendShapeWeights.Array.data[1]
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: f1e8e48863cec284b8c858b7918b943c,
@@ -2291,7 +2317,9 @@ MonoBehaviour:
   maxSegmentsCount: 30
   segmentsInterval: 0.2
   skin: {fileID: 648716242}
-  head: {fileID: 665819500}
+  canSewToHead: 1
+  headMesh: {fileID: 665819505}
+  headTransform: {fileID: 665819500}
   movementDamping: 0.08
   trailResponse: 200
   riggingPrefab: {fileID: 6141378677552221326, guid: fc62dd816ff5c14458f48e837ebbc010,
@@ -2567,6 +2595,12 @@ CapsuleCollider:
   m_Height: 0.5706237
   m_Direction: 2
   m_Center: {x: 0.00000008940697, y: 0.027129143, z: 0.3465341}
+--- !u!137 &665819505 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3887185075125053422, guid: f1e8e48863cec284b8c858b7918b943c,
+    type: 3}
+  m_PrefabInstance: {fileID: 565604363}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &680141518
 PrefabInstance:
   m_ObjectHideFlags: 0

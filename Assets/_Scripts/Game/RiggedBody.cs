@@ -21,11 +21,13 @@ public class RiggedBody : MonoBehaviour
     [SerializeField] private int maxSegmentsCount = 20;
     [SerializeField] private float segmentsInterval = .5f;
     [SerializeField] private SkinnedMeshRenderer skin;
+    [SerializeField] private bool canSewToHead;
+    [SerializeField] private SkinnedMeshRenderer headMesh;
 
 
     [Space]
     [Header("Rigging Animation")]
-    [SerializeField] Transform head;
+    [SerializeField] Transform headTransform;
     [SerializeField] private float movementDamping = .08f;
     [SerializeField] private float trailResponse = 200f;
     [SerializeField] private GameObject riggingPrefab;
@@ -117,7 +119,7 @@ public class RiggedBody : MonoBehaviour
             if(bones[i].gameObject.GetComponent<CharacterJoint>() != null)
             {
                 characterJoints[i] = bones[i].gameObject.GetComponent<CharacterJoint>();
-                if(i==0) characterJoints[0].connectedBody = head.GetComponent<Rigidbody>();
+                if(i==0) characterJoints[0].connectedBody = headTransform.GetComponent<Rigidbody>();
                 else characterJoints[i].connectedBody = bones[i-1].GetComponent<Rigidbody>();
             }
 
@@ -179,6 +181,8 @@ public class RiggedBody : MonoBehaviour
         List<BoneWeight> boneWeights = new List<BoneWeight>();
         Vector3[] origins = new Vector3[currentSegmentsCount];
 
+        Mesh headMeshBase = headMesh.sharedMesh;
+
         #region populate vertices
         // looping through each slice
         for (int slice = 0; slice < currentSegmentsCount; slice++)
@@ -195,11 +199,27 @@ public class RiggedBody : MonoBehaviour
             // looping in the vertices around each slice for extrusion
             for (int i = 0; i < vc; i++)
             {
+                // default case
                 Vector3 point = shape.baseVertices[i].point;
                 Vector3 normal = shape.baseVertices[i].normal;
                 float v = shape.baseVertices[i].c;
                 Vector3 pos = point * thickness * m; // relative position on the slice
                 Vector3 vertex = origin.localPosition + origin.localRotation * pos;
+
+                // if there is a head to sew into
+                if (slice == 0 && canSewToHead)
+                {
+                    // ! the code here is scripted specifically for the mesh provided in the test!
+                    // will have to be refactored with a new SO that provides the right indices
+
+                    // the idea is that we replace the positions of the current vertex
+                    // by the positions of index-n vertices of the corresponding vertex
+                    // in the original head mesh of the snake
+
+                    // beware that the mesh here has been modified so vertices do match,
+                    // otherwise we should specificy for the entire full ring
+                    vertex = headMeshBase.vertices[i];
+                }
 
                 // assign position
                 vertices.Add(vertex);
@@ -284,7 +304,7 @@ public class RiggedBody : MonoBehaviour
         {
             Vector3 target;
                 if (i == 0) {
-                    target = head.position + Vector3.forward * segmentsInterval;
+                    target = headTransform.position + Vector3.forward * segmentsInterval;
                 } else target = skin.bones[i-1].position;
 
             Vector3 interval = Vector3.forward * segmentsInterval * -1f;
@@ -292,7 +312,7 @@ public class RiggedBody : MonoBehaviour
             
             Vector3 dir = target - current;
 
-            if (i == 0) skin.bones[i].position = head.position;
+            if (i == 0) skin.bones[i].position = headTransform.position;
             else
             {
                 skin.bones[i].position = Vector3.SmoothDamp(
