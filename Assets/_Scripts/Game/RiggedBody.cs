@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEditor;
 
 // * UP AND RUNNING FOR FIRST ROUND OF GENERATION
-// TODO test stability with GrowSnake()
 // TODO refine capsule colliders
 
 
@@ -55,21 +54,25 @@ public class RiggedBody : MonoBehaviour
 
     private void Awake()
     {
-
-        // intialization
-        currentSegmentsCount = initialSegmentsCount;
-
-        // rig setup
-        rigidbodies = new Rigidbody[maxSegmentsCount];
-        capsuleColliders = new CapsuleCollider[maxSegmentsCount];
-        characterJoints = new CharacterJoint[maxSegmentsCount];
-        
-        bones = new Transform[maxSegmentsCount];
-        bindPoses = new Matrix4x4[maxSegmentsCount];
-
+        InitializeArmature();
         GenerateBodyArmature();
-            
-        // mesh setup
+
+        InitializeMesh();
+        GenerateBodyMesh();
+    }
+
+    private void OnDrawGizmos()
+    {
+        //if (debug) DrawBodyPreview();
+    }
+
+    private void Update()
+    {
+        Move();
+    }
+
+    private void InitializeMesh()
+    {
         mesh = new Mesh();
         mesh.name = "Snake Body";
         mesh.bindposes = bindPoses;
@@ -86,24 +89,21 @@ public class RiggedBody : MonoBehaviour
             float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
             thicknessMapping[i] = m;
         }
-
-        GenerateBodyMesh();
     }
 
-
-    // private void OnDrawGizmos()
-    // {
-    //     if (debug) DrawBodyPreview();
-    // }
-
-    private void Update()
+    private void InitializeArmature()
     {
-        Move();
+        currentSegmentsCount = initialSegmentsCount;
+
+        // rig setup
+        rigidbodies = new Rigidbody[maxSegmentsCount];
+        capsuleColliders = new CapsuleCollider[maxSegmentsCount];
+        characterJoints = new CharacterJoint[maxSegmentsCount];
+
+        bones = new Transform[maxSegmentsCount];
+        bindPoses = new Matrix4x4[maxSegmentsCount];
     }
 
-    /// <summary>
-    /// Generates all bone's transforms and set up of physics
-    /// </summary>
     private void GenerateBodyArmature()
     {
         for (int i = 0; i < bones.Length; i++)
@@ -144,9 +144,6 @@ public class RiggedBody : MonoBehaviour
 
     }
 
-    /// <summary>
-    /// Generates the mesh with bones transforms positions. Still wonky.
-    /// </summary>
     private void GenerateBodyMesh()
     {
         // shape management
