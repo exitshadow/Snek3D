@@ -55,10 +55,10 @@ public class RiggedBody : MonoBehaviour
     private void Awake()
     {
         InitializeArmature();
-        GenerateBodyArmature();
+        GenerateArmature();
 
         InitializeMesh();
-        GenerateBodyMesh();
+        GenerateMesh();
     }
 
     private void OnDrawGizmos()
@@ -104,7 +104,7 @@ public class RiggedBody : MonoBehaviour
         bindPoses = new Matrix4x4[maxSegmentsCount];
     }
 
-    private void GenerateBodyArmature()
+    private void GenerateArmature()
     {
         for (int i = 0; i < bones.Length; i++)
         {
@@ -144,7 +144,7 @@ public class RiggedBody : MonoBehaviour
 
     }
 
-    private void GenerateBodyMesh()
+    private void GenerateMesh()
     {
         // shape management
         int vc = shape.VertCount;
@@ -322,7 +322,7 @@ public class RiggedBody : MonoBehaviour
 
             bones[currentSegmentsCount].gameObject.GetComponent<CapsuleCollider>().enabled = true;
 
-            GenerateBodyMesh();
+            GenerateMesh();
         }
         else Debug.Log("Snake has attained its maximum length.");
         
