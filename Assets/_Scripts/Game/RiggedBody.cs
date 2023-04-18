@@ -22,7 +22,7 @@ public class RiggedBody : MonoBehaviour
     [SerializeField] private float segmentsInterval = .5f;
     [SerializeField] private SkinnedMeshRenderer skin;
     [SerializeField] private bool canSewToHead;
-    [SerializeField] private SkinnedMeshRenderer headMesh;
+    private Mesh headMesh;
 
 
     [Space]
@@ -56,6 +56,9 @@ public class RiggedBody : MonoBehaviour
 
     private void Awake()
     {
+        headMesh = headTransform.GetComponent<SkinnedMeshRenderer>().sharedMesh;
+        transform.position = headTransform.position;
+
         InitializeArmature();
         GenerateArmature();
 
@@ -137,6 +140,7 @@ public class RiggedBody : MonoBehaviour
             bones[i].localRotation = Quaternion.identity;
             
             bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
+            // this is actually also working just fine. problem is in the triangles somewhere
         }
 
         for (int i = currentSegmentsCount + 1; i < capsuleColliders.Length ; i++)
@@ -181,7 +185,7 @@ public class RiggedBody : MonoBehaviour
         List<BoneWeight> boneWeights = new List<BoneWeight>();
         Vector3[] origins = new Vector3[currentSegmentsCount];
 
-        Mesh headMeshBase = headMesh.sharedMesh;
+        Mesh headMeshBase = headMesh;
 
         #region populate vertices
         // looping through each slice
@@ -218,7 +222,20 @@ public class RiggedBody : MonoBehaviour
 
                     // beware that the mesh here has been modified so vertices do match,
                     // otherwise we should specificy for the entire full ring
-                    vertex = headMeshBase.vertices[i];
+
+                    // so we need to access the local position of the vertices in questions,
+                    // then transform it in world coordinates
+                    // then transform it in our local
+                    // origin = headTransform;
+                    Matrix4x4 headMeshToWorld = headTransform.localToWorldMatrix;
+                    Matrix4x4 worldToLocal = origin.worldToLocalMatrix;
+
+                    // ok the thing is it ain’t working because the calculations were wrong in the first place, this bit is likely to be correct
+                    vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[i]));
+
+                    if (i == 12) vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[0]));
+                    // this is correct.
+                    
                 }
 
                 // assign position
@@ -234,13 +251,15 @@ public class RiggedBody : MonoBehaviour
                 // assign uv
                 uvs.Add(new Vector2(t * currentSegmentsCount / 2, v));
 
-                bindPoses[slice] = origin.worldToLocalMatrix * transform.localToWorldMatrix;
+                bindPoses[slice] = origin.worldToLocalMatrix * transform.localToWorldMatrix; // this was already done actually
+                
                 // assign weights
                 BoneWeight weight = new BoneWeight();
                 weight.boneIndex0 = slice;
                 weight.weight0 = 1;
                 boneWeights.Add(weight);
                 mesh.bindposes = bindPoses;
+                mesh.RecalculateNormals();
             }
         }
         #endregion
@@ -276,6 +295,8 @@ public class RiggedBody : MonoBehaviour
                 triangles.Add(ap);
                 triangles.Add(bp);
                 //Debug.Log($"Face{b}, Tri02: {b}, {ap}, {bp}");
+
+                mesh.RecalculateNormals();
             }
         }
 
