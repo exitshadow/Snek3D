@@ -233,7 +233,7 @@ public class RiggedBody : MonoBehaviour
                     // ok the thing is it ain’t working because the calculations were wrong in the first place, this bit is likely to be correct
                     vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[i]));
 
-                    if (i == 12) vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[0]));
+                    if (i == 12) vertex = origin.localRotation * worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[0]));
                     // this is correct.
 
                     // BUT
