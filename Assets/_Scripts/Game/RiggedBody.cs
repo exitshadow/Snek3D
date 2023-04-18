@@ -235,6 +235,10 @@ public class RiggedBody : MonoBehaviour
 
                     if (i == 12) vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[0]));
                     // this is correct.
+
+                    // BUT
+
+                    // this is only working the first time lmfao
                     
                 }
 
@@ -321,12 +325,12 @@ public class RiggedBody : MonoBehaviour
     /// </summary>
     private void Move()
     {
-        for (int i = 0; i < maxSegmentsCount; i++)
+        skin.bones[0].position = headTransform.position;
+        skin.bones[0].rotation = headTransform.rotation;
+
+        for (int i = 1; i < maxSegmentsCount; i++)
         {
-            Vector3 target;
-                if (i == 0) {
-                    target = headTransform.position + Vector3.forward * segmentsInterval;
-                } else target = skin.bones[i-1].position;
+            Vector3 target = skin.bones[i-1].position;
 
             Vector3 interval = Vector3.forward * segmentsInterval * -1f;
             Vector3 current = skin.bones[i].position;
