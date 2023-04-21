@@ -2323,7 +2323,7 @@ MonoBehaviour:
   trailResponse: 200
   riggingPrefab: {fileID: 6141378677552221326, guid: fc62dd816ff5c14458f48e837ebbc010,
     type: 3}
-  debug: 0
+  debug: 1
   linePreview: {fileID: 648716244}
 --- !u!137 &648716242
 SkinnedMeshRenderer:
