@@ -63,12 +63,14 @@ public class RiggedBody : MonoBehaviour
         GenerateArmature();
 
         InitializeMesh();
+        InitializeMovement();
+        
         GenerateMesh();
     }
 
     private void OnDrawGizmos()
     {
-        //if (debug) DrawBodyPreview();
+        DrawBodyPreview();
     }
 
     private void Update()
@@ -84,9 +86,6 @@ public class RiggedBody : MonoBehaviour
         skin.sharedMesh = mesh;
         skin.bones = bones;
 
-        // movement setup
-        velocities = new Vector3[maxSegmentsCount];
-
         thicknessMapping = new float[maxSegmentsCount];
         for (int i = 0; i < thicknessMapping.Length; i++)
         {
@@ -94,6 +93,12 @@ public class RiggedBody : MonoBehaviour
             float m = BezierUtils.CalculateBezierPoint(t, thicknessCurve).position.x;
             thicknessMapping[i] = m;
         }
+    }
+
+    private void InitializeMovement()
+    {
+        // movement setup
+        velocities = new Vector3[maxSegmentsCount];
     }
 
     private void InitializeArmature()
@@ -233,7 +238,7 @@ public class RiggedBody : MonoBehaviour
                     // ok the thing is it ain’t working because the calculations were wrong in the first place, this bit is likely to be correct
                     vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[i]));
 
-                    if (i == 12) vertex = origin.localRotation * worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[0]));
+                    if (i == 12) vertex = vertices[0];
                     // this is correct.
 
                     // BUT
@@ -255,7 +260,11 @@ public class RiggedBody : MonoBehaviour
                 // assign uv
                 uvs.Add(new Vector2(t * currentSegmentsCount / 2, v));
 
-                bindPoses[slice] = origin.worldToLocalMatrix * transform.localToWorldMatrix; // this was already done actually
+                // it has to be reinstated every time
+                // note that the first ring remains correct if this line is commented out
+                // and bam!
+                if (slice != 0)
+                    bindPoses[slice] = origin.worldToLocalMatrix * transform.localToWorldMatrix;
                 
                 // assign weights
                 BoneWeight weight = new BoneWeight();
@@ -378,6 +387,9 @@ public class RiggedBody : MonoBehaviour
     /// </summary>
     void DrawBodyPreview()
     {
+        if (!debug || skin.sharedMesh == null)
+            return;
+
         for (int i = 0; i < maxSegmentsCount; i++)
         {
             float t = i / (currentSegmentsCount - 1f);
