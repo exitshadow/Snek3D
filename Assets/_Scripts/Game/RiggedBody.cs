@@ -54,6 +54,12 @@ public class RiggedBody : MonoBehaviour
     private CharacterJoint[] characterJoints;
     private CapsuleCollider[] capsuleColliders;
 
+    // todo
+    // - add resolution rings to the snake body
+    // - change triangles order to flip the normals correctly
+    // - refactor head sewing part to make it scalable to other models
+    // - replace capsule colliders & smooth damp movement by proper hinge joints
+
     private void Awake()
     {
         headMesh = headTransform.GetComponent<SkinnedMeshRenderer>().sharedMesh;
@@ -136,16 +142,12 @@ public class RiggedBody : MonoBehaviour
                 bones[0].localPosition = Vector3.zero;
             } else {
                 bones[i].parent = transform;
-                //bones[i].parent = bones[i-1];
                 bones[i].localPosition = new Vector3(0,0, -segmentsInterval * (i - 1));
 
             }
 
-            //bones[i].localPosition = new Vector3(0, 0, -segmentsInterval * i);
             bones[i].localRotation = Quaternion.identity;
-            
             bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
-            // this is actually also working just fine. problem is in the triangles somewhere
         }
 
         for (int i = currentSegmentsCount + 1; i < capsuleColliders.Length ; i++)
@@ -157,7 +159,6 @@ public class RiggedBody : MonoBehaviour
 
     private void GenerateMesh()
     {
-        // shape management
         int vc = shape.VertCount;
         int step, stop;
 
@@ -178,7 +179,6 @@ public class RiggedBody : MonoBehaviour
             }
         }
 
-        // starting generation
         Debug.Log("Generating body mesh...");
         mesh.Clear();
 
@@ -219,7 +219,7 @@ public class RiggedBody : MonoBehaviour
                 if (slice == 0 && canSewToHead)
                 {
                     // ! the code here is scripted specifically for the mesh provided in the test!
-                    // will have to be refactored with a new SO that provides the right indices
+                    // will have to be refactored with a new scriptable that provides the right indices
 
                     // the idea is that we replace the positions of the current vertex
                     // by the positions of index-n vertices of the corresponding vertex
@@ -231,19 +231,15 @@ public class RiggedBody : MonoBehaviour
                     // so we need to access the local position of the vertices in questions,
                     // then transform it in world coordinates
                     // then transform it in our local
-                    // origin = headTransform;
+
                     Matrix4x4 headMeshToWorld = headTransform.localToWorldMatrix;
                     Matrix4x4 worldToLocal = origin.worldToLocalMatrix;
 
-                    // ok the thing is it ain’t working because the calculations were wrong in the first place, this bit is likely to be correct
                     vertex = worldToLocal.MultiplyPoint3x4(headMeshToWorld.MultiplyPoint3x4(headMeshBase.vertices[i]));
 
+                    // special case to provide the correct vertex to close the first ring of triangles
                     if (i == 12) vertex = vertices[0];
-                    // this is correct.
 
-                    // BUT
-
-                    // this is only working the first time lmfao
                     
                 }
 
@@ -260,9 +256,7 @@ public class RiggedBody : MonoBehaviour
                 // assign uv
                 uvs.Add(new Vector2(t * currentSegmentsCount / 2, v));
 
-                // it has to be reinstated every time
-                // note that the first ring remains correct if this line is commented out
-                // and bam!
+                // overwriting/updating previous bind poses except for the first transform that is always tied to the parent one
                 if (slice != 0)
                     bindPoses[slice] = origin.worldToLocalMatrix * transform.localToWorldMatrix;
                 
@@ -278,8 +272,8 @@ public class RiggedBody : MonoBehaviour
         #endregion
 
         #region draw triangles
-        // adding triangle indices
-        // loop in slices
+
+        // loop in the body slices
         for (int s = 0; s < currentSegmentsCount - 1; s++)
         {
             int root = s * vc ;
@@ -361,18 +355,13 @@ public class RiggedBody : MonoBehaviour
         }
     }
 
-    public void GrowSnake() {
+    public void GrowSnake()
+    {
         if (currentSegmentsCount < maxSegmentsCount)
         {
             Debug.Log("Grow the snake");
-            linePreview.positionCount++; // * testing only
+            linePreview.positionCount++;
             currentSegmentsCount++;
-
-            // reassign bidposes
-            for (int i = 0; i < bones.Length; i++)
-            {
-                //bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
-            }
 
             bones[currentSegmentsCount].gameObject.GetComponent<CapsuleCollider>().enabled = true;
 
@@ -382,9 +371,6 @@ public class RiggedBody : MonoBehaviour
         
     }
 
-    /// <summary>
-    /// Draws the axis from the bones but still can't figure how to draw the circles round ha
-    /// </summary>
     void DrawBodyPreview()
     {
         if (!debug || skin.sharedMesh == null)
